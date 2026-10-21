@@ -235,58 +235,215 @@ export default function PublicLayout({ children, categories = [], breakingNews }
 
             {/* Mobile Drawer Menu */}
             {mobileMenuOpen && (
-                <div className="fixed inset-0 z-50 bg-slate-900/60 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-                    <div className="w-4/5 max-w-sm bg-white h-full p-6 shadow-xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-                            <span className="font-serif font-black text-xl text-slate-950">NEWSPORTAL</span>
-                            <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-slate-500">
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                        <div className="py-4 space-y-1">
-                            <Link href="/" className="block px-3 py-2 text-sm font-semibold text-slate-900 rounded-md hover:bg-slate-100">
-                                Latest News
-                            </Link>
-                            {categories.map((cat) => (
-                                <Link
-                                    key={cat.id}
-                                    href={`/${cat.slug}`}
-                                    className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100"
-                                >
-                                    {cat.name}
-                                </Link>
-                            ))}
-                        </div>
-                        <div className="pt-4 border-t border-slate-200 space-y-2">
-                            <Link 
-                                href={auth?.reader ? "/saved" : "/reader/login"} 
-                                className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100"
-                            >
-                                Saved Stories
-                            </Link>
-                            {!auth?.reader ? (
+                <div 
+                    className="fixed inset-0 z-50 bg-slate-900/60 lg:hidden backdrop-blur-xs transition-opacity duration-200" 
+                    onClick={() => setMobileMenuOpen(false)}
+                >
+                    <div 
+                        className="w-4/5 max-w-sm bg-white h-full p-6 shadow-2xl overflow-y-auto flex flex-col justify-between" 
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="space-y-6">
+                            {/* Drawer Header */}
+                            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
                                 <Link 
-                                    href="/reader/login" 
-                                    className="block px-3 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50"
+                                    href="/" 
+                                    onClick={() => setMobileMenuOpen(false)} 
+                                    className="flex items-center gap-2"
                                 >
-                                    Reader Sign In / Free Account
+                                    <div className="w-7 h-7 rounded bg-blue-600 flex items-center justify-center text-white font-black text-base">
+                                        N
+                                    </div>
+                                    <span className="font-serif font-black text-xl text-slate-950">NEWSPORTAL</span>
                                 </Link>
-                            ) : (
+                                <button 
+                                    type="button"
+                                    onClick={() => setMobileMenuOpen(false)} 
+                                    className="p-1 text-slate-400 hover:text-slate-700 rounded-md transition cursor-pointer"
+                                    aria-label="Close menu"
+                                >
+                                    <X className="w-6 h-6" />
+                                </button>
+                            </div>
+
+                            {/* Mobile Search Bar */}
+                            <form 
+                                onSubmit={(e) => {
+                                    handleSearch(e);
+                                    setMobileMenuOpen(false);
+                                }} 
+                                className="relative"
+                            >
+                                <input
+                                    type="search"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search stories, topics, authors..."
+                                    className="w-full bg-slate-100 border-none rounded-xl pl-9 pr-4 py-2 text-xs focus:bg-white focus:ring-2 focus:ring-blue-600 outline-none transition"
+                                />
+                                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            </form>
+
+                            {/* Primary Navigation Items (moved from bottom nav bar) */}
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3">
+                                    Navigation
+                                </span>
+                                <Link 
+                                    href="/" 
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-slate-900 rounded-xl hover:bg-slate-100 transition"
+                                >
+                                    <HomeIcon className="w-4 h-4 text-blue-600" />
+                                    <span>Home</span>
+                                </Link>
+                                <Link 
+                                    href="/search" 
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-slate-100 transition"
+                                >
+                                    <Compass className="w-4 h-4 text-slate-500" />
+                                    <span>Discover & Search</span>
+                                </Link>
+                                <Link 
+                                    href={auth?.reader ? "/saved" : "/reader/login"} 
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center justify-between px-3 py-2 text-sm font-medium text-slate-700 rounded-xl hover:bg-slate-100 transition"
+                                >
+                                    <span className="flex items-center gap-3">
+                                        <Bookmark className="w-4 h-4 text-blue-600" />
+                                        <span>Saved Stories</span>
+                                    </span>
+                                    {auth?.reader && (
+                                        <span className="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full">
+                                            Reader
+                                        </span>
+                                    )}
+                                </Link>
                                 <button
                                     type="button"
-                                    onClick={() => router.post('/reader/logout')}
-                                    className="w-full text-left px-3 py-2 text-sm font-medium text-rose-600 rounded-md hover:bg-rose-50 cursor-pointer"
+                                    onClick={() => {
+                                        setMobileMenuOpen(false);
+                                        setSubscribeModalOpen(true);
+                                    }}
+                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm font-semibold text-blue-600 bg-blue-50/70 hover:bg-blue-100/70 rounded-xl transition cursor-pointer text-left mt-1"
                                 >
-                                    Sign Out ({auth.reader.name})
+                                    <UserIcon className="w-4 h-4 text-blue-600" />
+                                    <span>Subscribe to Morning Dispatch</span>
                                 </button>
+                            </div>
+
+                            {/* News Sections & Desks */}
+                            <div className="space-y-1 pt-3 border-t border-slate-100">
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3">
+                                    News Desks
+                                </span>
+                                <Link 
+                                    href="/" 
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="block px-3 py-1.5 text-xs font-semibold text-slate-800 rounded-lg hover:bg-slate-100 transition"
+                                >
+                                    Latest Headlines
+                                </Link>
+                                {categories.map((cat) => (
+                                    <Link
+                                        key={cat.id}
+                                        href={`/${cat.slug}`}
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="block px-3 py-1.5 text-xs font-medium text-slate-600 rounded-lg hover:text-slate-950 hover:bg-slate-100 transition"
+                                    >
+                                        {cat.name}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Drawer Bottom / User & Reader State */}
+                        <div className="pt-6 border-t border-slate-200 mt-6 space-y-3">
+                            {auth?.reader ? (
+                                <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 text-[11px]">Signed in as</span>
+                                        <span className="text-[10px] font-mono uppercase bg-blue-100 text-blue-700 px-1.5 py-0.2 rounded font-semibold">
+                                            Reader
+                                        </span>
+                                    </div>
+                                    <div className="font-semibold text-slate-900 text-xs truncate">
+                                        {auth.reader.name}
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setMobileMenuOpen(false);
+                                            router.post('/reader/logout');
+                                        }}
+                                        className="w-full text-center text-xs font-medium text-rose-600 hover:text-rose-700 py-1.5 rounded-lg border border-rose-200 bg-white transition cursor-pointer"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </div>
+                            ) : auth?.user ? (
+                                <div className="space-y-2 bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                                    <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-500 text-[11px]">Newsroom Staff</span>
+                                        <span className="text-[10px] font-mono uppercase bg-slate-200 text-slate-700 px-1.5 py-0.2 rounded font-semibold">
+                                            {auth.user.role}
+                                        </span>
+                                    </div>
+                                    <div className="font-semibold text-slate-900 text-xs truncate">
+                                        {auth.user.name}
+                                    </div>
+                                    <Link
+                                        href="/cms"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="block text-center text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 py-1.5 rounded-lg transition"
+                                    >
+                                        Open Newsroom CMS
+                                    </Link>
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Link
+                                        href="/reader/login"
+                                        onClick={() => setMobileMenuOpen(false)}
+                                        className="block text-center text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 py-2 rounded-xl transition"
+                                    >
+                                        Reader Sign In / Free Account
+                                    </Link>
+                                </div>
                             )}
+
+                            {/* Machine & Feed Shortcuts */}
+                            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-2 px-1">
+                                <a 
+                                    href="/feed" 
+                                    target="_blank" 
+                                    className="hover:text-slate-700 transition flex items-center gap-1"
+                                >
+                                    <Rss className="w-3 h-3 text-amber-500" /> RSS
+                                </a>
+                                <a 
+                                    href="/llms.txt" 
+                                    target="_blank" 
+                                    className="hover:text-slate-700 transition flex items-center gap-1"
+                                >
+                                    <Bot className="w-3 h-3 text-blue-500" /> llms.txt
+                                </a>
+                                <Link 
+                                    href="/cms" 
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="hover:text-slate-700 transition"
+                                >
+                                    CMS
+                                </Link>
+                            </div>
                         </div>
                     </div>
                 </div>
             )}
 
             {/* MAIN CONTENT AREA */}
-            <main className="flex-1 pb-16 lg:pb-0">
+            <main className="flex-1">
                 {children}
             </main>
 
@@ -409,33 +566,6 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                     </div>
                 </div>
             </footer>
-
-            {/* Mobile Bottom Navigation Bar */}
-            <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur border-t border-slate-200 py-2 px-6 flex items-center justify-around text-slate-600">
-                <Link href="/" className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600">
-                    <HomeIcon className="w-5 h-5 text-blue-600" />
-                    <span>Home</span>
-                </Link>
-                <Link href="/search" className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600">
-                    <Compass className="w-5 h-5" />
-                    <span>Discover</span>
-                </Link>
-                <Link 
-                    href={auth?.reader ? "/saved" : "/reader/login"} 
-                    className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600"
-                >
-                    <Bookmark className="w-5 h-5" />
-                    <span>Saved</span>
-                </Link>
-                <button
-                    type="button"
-                    onClick={() => setSubscribeModalOpen(true)}
-                    className="flex flex-col items-center gap-0.5 text-[11px] font-medium text-blue-600 cursor-pointer"
-                >
-                    <UserIcon className="w-5 h-5 text-blue-600" />
-                    <span>Subscribe</span>
-                </button>
-            </div>
 
             {/* Global Subscribe Modal */}
             <SubscribeModal 
