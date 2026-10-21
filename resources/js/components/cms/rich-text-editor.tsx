@@ -88,7 +88,7 @@ export function RichTextEditor({
     };
 
     // Calculate metrics
-    const textContent = value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const textContent = (value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     const wordCount = textContent ? textContent.split(' ').filter(Boolean).length : 0;
     const charCount = textContent.length;
     const readingTime = Math.max(1, Math.ceil(wordCount / 200));

@@ -50,8 +50,15 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
         meta_description: article?.seo?.meta_description || '',
         focus_keyword: article?.seo?.focus_keyword || '',
         tldr: article?.ai_meta?.tldr || '',
-        key_facts: article?.ai_meta?.key_facts || [''],
-        faq_json: article?.ai_meta?.faq_json || [{ question: '', answer: '' }],
+        key_facts: (Array.isArray(article?.ai_meta?.key_facts) && article.ai_meta.key_facts.length > 0)
+            ? article.ai_meta.key_facts.map(f => (f != null ? String(f) : ''))
+            : [''],
+        faq_json: (Array.isArray(article?.ai_meta?.faq_json) && article.ai_meta.faq_json.length > 0)
+            ? article.ai_meta.faq_json.map(item => ({
+                question: item?.question != null ? String(item.question) : '',
+                answer: item?.answer != null ? String(item.answer) : '',
+            }))
+            : [{ question: '', answer: '' }],
         topics: article?.topics ? article.topics.map(t => t.id) : [],
         tags: article?.tags ? article.tags.map(t => t.id) : [],
         revision_note: '',
@@ -60,13 +67,13 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
     // Real-time AEO & SEO Scorecard
     const aeoScore = useMemo(() => {
         let score = 0;
-        if (data.title.trim().length > 15) score += 15;
-        if (data.standfirst.trim().length > 30) score += 15;
-        if (data.body.trim().length > 200) score += 20;
-        if (data.tldr.trim().length > 20) score += 20;
-        const validFacts = data.key_facts.filter(f => f.trim().length > 5);
+        if ((data.title || '').trim().length > 15) score += 15;
+        if ((data.standfirst || '').trim().length > 30) score += 15;
+        if ((data.body || '').trim().length > 200) score += 20;
+        if ((data.tldr || '').trim().length > 20) score += 20;
+        const validFacts = (data.key_facts || []).filter(f => typeof f === 'string' && f.trim().length > 5);
         if (validFacts.length >= 3) score += 15;
-        const validFaqs = data.faq_json.filter(f => f.question.trim() && f.answer.trim());
+        const validFaqs = (data.faq_json || []).filter(f => f && typeof f.question === 'string' && typeof f.answer === 'string' && f.question.trim().length > 0 && f.answer.trim().length > 0);
         if (validFaqs.length >= 1) score += 15;
         return Math.min(100, score);
     }, [data.title, data.standfirst, data.body, data.tldr, data.key_facts, data.faq_json]);
@@ -257,7 +264,7 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                                         <div key={idx} className="flex items-center gap-2">
                                             <input
                                                 type="text"
-                                                value={fact}
+                                                value={fact || ''}
                                                 onChange={(e) => updateKeyFact(idx, e.target.value)}
                                                 placeholder={`Key fact point #${idx + 1}`}
                                                 className="w-full text-xs border border-slate-300 rounded-lg p-2 focus:outline-none"
@@ -295,13 +302,13 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                                         <div key={idx} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2 relative">
                                             <input
                                                 type="text"
-                                                value={faq.question}
+                                                value={faq?.question || ''}
                                                 onChange={(e) => updateFaq(idx, 'question', e.target.value)}
                                                 placeholder="Question (e.g. When will the treaty take effect?)"
                                                 className="w-full text-xs font-semibold bg-white border border-slate-300 rounded-lg p-2 focus:outline-none"
                                             />
                                             <textarea
-                                                value={faq.answer}
+                                                value={faq?.answer || ''}
                                                 onChange={(e) => updateFaq(idx, 'answer', e.target.value)}
                                                 rows={2}
                                                 placeholder="Concise, verified answer..."
