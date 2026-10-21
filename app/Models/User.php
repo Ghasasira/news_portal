@@ -67,11 +67,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
         return $this->hasMany(Comment::class);
     }
 
-    public function savedArticles(): BelongsToMany
-    {
-        return $this->belongsToMany(Article::class, 'saved_articles')->withTimestamps();
-    }
-
     public function isAdmin(): bool
     {
         return in_array($this->role, ['super_admin', 'chief_editor']);

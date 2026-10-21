@@ -12,8 +12,8 @@ interface Props {
 }
 
 export default function SavedArticlesPage({ articles, categories }: Props) {
-    const { auth } = usePage().props as unknown as { auth?: { user?: { name: string }; reader?: { name: string } } };
-    const isLoggedIn = Boolean(auth?.reader || auth?.user);
+    const { auth } = usePage().props as unknown as { auth?: { reader?: { name: string } } };
+    const isReaderLoggedIn = Boolean(auth?.reader);
 
     const [localBookmarks, setLocalBookmarks] = useState<LocalBookmark[]>([]);
 
@@ -74,11 +74,11 @@ export default function SavedArticlesPage({ articles, categories }: Props) {
                         </div>
                     </div>
 
-                    {!isLoggedIn && (
+                    {!isReaderLoggedIn && (
                         <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                             <span>Saved to this device.</span>
                             <Link href="/reader/login" className="font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
-                                Sign in to sync <ArrowRight className="w-3 h-3" />
+                                Sign in as Reader to sync <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>
                     )}
@@ -130,7 +130,7 @@ export default function SavedArticlesPage({ articles, categories }: Props) {
                         ))}
 
                         {/* Local guest saved articles */}
-                        {!isLoggedIn && localBookmarks.map((art) => (
+                        {!isReaderLoggedIn && localBookmarks.map((art) => (
                             <div
                                 key={`local-${art.id}`}
                                 className="group bg-white rounded-xl border border-slate-200 hover:border-slate-300 p-3 shadow-xs space-y-3 flex flex-col justify-between"

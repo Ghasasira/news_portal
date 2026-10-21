@@ -48,10 +48,10 @@ class ArticleController extends Controller
             ->take(3)
             ->get();
 
-        // Check if saved by current user
+        // Check if saved by current reader (saved stories belong to readers)
         $isSaved = false;
-        if ($request->user()) {
-            $isSaved = $request->user()->savedArticles()->where('article_id', $article->id)->exists();
+        if ($reader = $request->user('reader')) {
+            $isSaved = $reader->savedArticles()->where('article_id', $article->id)->exists();
         }
 
         // Schema.org NewsArticle JSON-LD

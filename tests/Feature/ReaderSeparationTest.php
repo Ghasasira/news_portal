@@ -152,7 +152,7 @@ class ReaderSeparationTest extends TestCase
         ]);
     }
 
-    public function test_staff_user_and_reader_saved_articles_are_isolated(): void
+    public function test_saved_articles_belong_strictly_to_readers_and_staff_cannot_bookmark(): void
     {
         $reader = Reader::create([
             'name' => 'Reader Alice',
@@ -165,13 +165,18 @@ class ReaderSeparationTest extends TestCase
             'email_verified_at' => now(),
         ]);
 
-        SavedArticle::create(['reader_id' => $reader->id, 'article_id' => $this->article->id]);
-        SavedArticle::create(['user_id' => $staff->id, 'article_id' => $this->article->id]);
-
+        // Reader can save article
+        $saved = SavedArticle::create(['reader_id' => $reader->id, 'article_id' => $this->article->id]);
         $this->assertEquals(1, $reader->savedArticles()->count());
-        $this->assertEquals(1, $staff->savedArticles()->count());
-        $this->assertEquals($this->article->id, $reader->savedArticles()->first()->id);
-        $this->assertEquals($this->article->id, $staff->savedArticles()->first()->id);
+        $this->assertEquals($reader->id, $saved->reader->id);
+
+        // Staff user attempting to access /saved is redirected to reader login
+        $staffSavedResponse = $this->actingAs($staff, 'web')->get(route('saved.articles'));
+        $staffSavedResponse->assertRedirect(route('reader.login'));
+
+        // Staff user attempting to bookmark is redirected to reader login
+        $staffBookmarkResponse = $this->actingAs($staff, 'web')->post(route('articles.bookmark', $this->article));
+        $staffBookmarkResponse->assertRedirect(route('reader.login'));
     }
 
     public function test_admin_can_view_readers_tab_in_cms(): void

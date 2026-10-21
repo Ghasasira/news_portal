@@ -87,13 +87,9 @@ export default function PublicLayout({ children, categories = [], breakingNews }
 
                         {auth?.user ? (
                             <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
-                                <Link href="/saved" className="hover:text-white transition flex items-center gap-1">
-                                    <Bookmark className="w-3.5 h-3.5 text-blue-400" />
-                                    <span className="hidden sm:inline">Saved</span>
-                                </Link>
                                 <Link href="/cms" className="font-medium text-slate-200 hover:text-white transition text-xs flex items-center gap-1.5">
                                     <span>{auth.user.name}</span>
-                                    <span className="bg-blue-600/50 text-blue-200 text-[10px] px-1.5 py-0.2 rounded font-mono">CMS</span>
+                                    <span className="bg-blue-600/50 text-blue-200 text-[10px] px-1.5 py-0.2 rounded font-mono">CMS Staff</span>
                                 </Link>
                             </div>
                         ) : auth?.reader ? (
@@ -181,7 +177,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                             <Search className="w-5 h-5" />
                         </Link>
                         <Link
-                            href={isAuthenticated ? "/saved" : "/reader/login"}
+                            href={auth?.reader ? "/saved" : "/reader/login"}
                             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                         >
                             <Bookmark className="w-3.5 h-3.5 text-blue-600" />
@@ -263,19 +259,19 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                         </div>
                         <div className="pt-4 border-t border-slate-200 space-y-2">
                             <Link 
-                                href={isAuthenticated ? "/saved" : "/reader/login"} 
+                                href={auth?.reader ? "/saved" : "/reader/login"} 
                                 className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100"
                             >
-                                Saved Bookmarks
+                                Saved Stories
                             </Link>
-                            {!isAuthenticated ? (
+                            {!auth?.reader ? (
                                 <Link 
                                     href="/reader/login" 
                                     className="block px-3 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50"
                                 >
                                     Reader Sign In / Free Account
                                 </Link>
-                            ) : auth?.reader ? (
+                            ) : (
                                 <button
                                     type="button"
                                     onClick={() => router.post('/reader/logout')}
@@ -283,7 +279,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                                 >
                                     Sign Out ({auth.reader.name})
                                 </button>
-                            ) : null}
+                            )}
                         </div>
                     </div>
                 </div>
@@ -425,7 +421,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                     <span>Discover</span>
                 </Link>
                 <Link 
-                    href={isAuthenticated ? "/saved" : "/reader/login"} 
+                    href={auth?.reader ? "/saved" : "/reader/login"} 
                     className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600"
                 >
                     <Bookmark className="w-5 h-5" />

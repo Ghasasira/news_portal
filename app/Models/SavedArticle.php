@@ -12,18 +12,12 @@ class SavedArticle extends Model
 
     protected $fillable = [
         'reader_id',
-        'user_id',
         'article_id',
     ];
 
     public function reader(): BelongsTo
     {
         return $this->belongsTo(Reader::class);
-    }
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class);
     }
 
     public function article(): BelongsTo

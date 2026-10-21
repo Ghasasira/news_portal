@@ -46,8 +46,8 @@ Route::post('/reader/logout', [ReaderAuthController::class, 'logout'])->name('re
 Route::get('/auth/google/redirect', [ReaderAuthController::class, 'googleRedirect'])->name('auth.google.redirect');
 Route::get('/auth/google/callback', [ReaderAuthController::class, 'googleCallback'])->name('auth.google.callback');
 
-// Authenticated Reader Actions (accessible by readers and staff)
-Route::middleware(['auth:reader,web'])->group(function () {
+// Authenticated Reader Actions (saved stories belong strictly to readers)
+Route::middleware(['auth:reader'])->group(function () {
     Route::get('/saved', [ReaderActionController::class, 'savedArticles'])->name('saved.articles');
     Route::post('/articles/{article}/bookmark', [ReaderActionController::class, 'toggleBookmark'])->name('articles.bookmark');
 });

@@ -34,28 +34,17 @@ class ReaderActionController extends Controller
 
     public function toggleBookmark(Article $article, Request $request): RedirectResponse
     {
-        $actorData = $this->resolveActor($request);
-        $type = $actorData['type'];
-        $actor = $actorData['actor'];
+        $reader = Auth::guard('reader')->user();
 
-        if ($type === 'guest') {
+        if (! $reader) {
             return redirect()->route('reader.login');
         }
 
-        if ($type === 'reader') {
-            $saved = SavedArticle::where('reader_id', $actor->id)->where('article_id', $article->id)->first();
-            if ($saved) {
-                $saved->delete();
-            } else {
-                SavedArticle::create(['reader_id' => $actor->id, 'article_id' => $article->id]);
-            }
+        $saved = SavedArticle::where('reader_id', $reader->id)->where('article_id', $article->id)->first();
+        if ($saved) {
+            $saved->delete();
         } else {
-            $saved = SavedArticle::where('user_id', $actor->id)->where('article_id', $article->id)->first();
-            if ($saved) {
-                $saved->delete();
-            } else {
-                SavedArticle::create(['user_id' => $actor->id, 'article_id' => $article->id]);
-            }
+            SavedArticle::create(['reader_id' => $reader->id, 'article_id' => $article->id]);
         }
 
         return back();
@@ -63,13 +52,16 @@ class ReaderActionController extends Controller
 
     public function savedArticles(Request $request): Response
     {
-        $actorData = $this->resolveActor($request);
-        $actor = $actorData['actor'];
+        $reader = Auth::guard('reader')->user();
 
-        $saved = $actor ? $actor->savedArticles()
+        if (! $reader) {
+            return redirect()->route('reader.login');
+        }
+
+        $saved = $reader->savedArticles()
             ->with(['category', 'user.authorProfile'])
             ->latest('published_at')
-            ->paginate(12) : collect();
+            ->paginate(12);
 
         $allCategories = Category::whereNull('parent_id')->with('children')->orderBy('sort_order')->get();
 

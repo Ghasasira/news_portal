@@ -117,6 +117,12 @@ class Article extends Model
         return $this->hasMany(Comment::class)->where('status', 'approved')->latest();
     }
 
+    public function savedByReaders(): BelongsToMany
+    {
+        return $this->belongsToMany(Reader::class, 'saved_articles', 'article_id', 'reader_id')
+            ->withTimestamps();
+    }
+
     public function scopePublished(Builder $query): Builder
     {
         return $query->where('status', 'published')

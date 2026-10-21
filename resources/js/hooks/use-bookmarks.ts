@@ -17,8 +17,8 @@ export interface LocalBookmark {
 }
 
 export function useBookmarks(article?: Article | null) {
-    const { auth } = usePage().props as unknown as { auth?: { user?: { id: number; name: string }; reader?: { id: number; name: string } } };
-    const isLoggedIn = Boolean(auth?.reader || auth?.user);
+    const { auth } = usePage().props as unknown as { auth?: { reader?: { id: number; name: string } } };
+    const isReader = Boolean(auth?.reader);
 
     const [isSaved, setIsSaved] = useState(false);
 
@@ -26,8 +26,8 @@ export function useBookmarks(article?: Article | null) {
     useEffect(() => {
         if (!article) return;
 
-        if (isLoggedIn) {
-            // When logged in, parent page passes isSaved or we check via props
+        if (isReader) {
+            // When logged in as reader, parent page passes isSaved or we check via props
             return;
         }
 
@@ -38,10 +38,10 @@ export function useBookmarks(article?: Article | null) {
                 setIsSaved(list.some(b => b.id === article.id));
             }
         } catch {}
-    }, [article?.id, isLoggedIn]);
+    }, [article?.id, isReader]);
 
     const toggle = (targetArticle: Article | LocalBookmark) => {
-        if (isLoggedIn) {
+        if (isReader) {
             setIsSaved(!isSaved);
             router.post(
                 `/articles/${targetArticle.id}/bookmark`,
@@ -99,6 +99,6 @@ export function useBookmarks(article?: Article | null) {
         isSaved,
         setIsSaved,
         toggle,
-        isLoggedIn,
+        isLoggedIn: isReader,
     };
 }
