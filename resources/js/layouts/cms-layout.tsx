@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function CmsLayout({ children, title }: Props) {
-    const { auth, flash } = usePage().props as { 
+    const { auth, flash } = usePage().props as unknown as { 
         auth?: { user?: { name: string; role: string; email: string } };
         flash?: { success?: string; error?: string };
     };

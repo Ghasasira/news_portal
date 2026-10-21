@@ -8,6 +8,7 @@ export interface AuthorProfile {
     beat: string | null;
     social_links: Record<string, string> | null;
     is_verified: boolean;
+    user?: User;
 }
 
 export interface User {

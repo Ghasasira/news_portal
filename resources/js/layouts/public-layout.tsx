@@ -26,7 +26,7 @@ interface Props {
 }
 
 export default function PublicLayout({ children, categories = [], breakingNews }: Props) {
-    const { auth } = usePage().props as { auth?: { user?: { name: string; role: string } } };
+    const { auth } = usePage().props as unknown as { auth?: { user?: { name: string; role: string } } };
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
