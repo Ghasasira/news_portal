@@ -11,9 +11,15 @@ class SavedArticle extends Model
     use HasFactory;
 
     protected $fillable = [
+        'reader_id',
         'user_id',
         'article_id',
     ];
+
+    public function reader(): BelongsTo
+    {
+        return $this->belongsTo(Reader::class);
+    }
 
     public function user(): BelongsTo
     {

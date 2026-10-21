@@ -10,23 +10,52 @@ use App\Models\NewsletterSubscriber;
 use App\Models\SavedArticle;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ReaderActionController extends Controller
 {
+    /**
+     * Resolve the currently authenticated reader or staff user.
+     */
+    protected function resolveActor(Request $request): array
+    {
+        if ($reader = Auth::guard('reader')->user()) {
+            return ['type' => 'reader', 'actor' => $reader];
+        }
+
+        if ($user = Auth::guard('web')->user()) {
+            return ['type' => 'user', 'actor' => $user];
+        }
+
+        return ['type' => 'guest', 'actor' => null];
+    }
+
     public function toggleBookmark(Article $article, Request $request): RedirectResponse
     {
-        $user = $request->user();
-        if (!$user) {
+        $actorData = $this->resolveActor($request);
+        $type = $actorData['type'];
+        $actor = $actorData['actor'];
+
+        if ($type === 'guest') {
             return redirect()->route('login');
         }
 
-        $saved = SavedArticle::where('user_id', $user->id)->where('article_id', $article->id)->first();
-        if ($saved) {
-            $saved->delete();
+        if ($type === 'reader') {
+            $saved = SavedArticle::where('reader_id', $actor->id)->where('article_id', $article->id)->first();
+            if ($saved) {
+                $saved->delete();
+            } else {
+                SavedArticle::create(['reader_id' => $actor->id, 'article_id' => $article->id]);
+            }
         } else {
-            SavedArticle::create(['user_id' => $user->id, 'article_id' => $article->id]);
+            $saved = SavedArticle::where('user_id', $actor->id)->where('article_id', $article->id)->first();
+            if ($saved) {
+                $saved->delete();
+            } else {
+                SavedArticle::create(['user_id' => $actor->id, 'article_id' => $article->id]);
+            }
         }
 
         return back();
@@ -34,9 +63,10 @@ class ReaderActionController extends Controller
 
     public function savedArticles(Request $request): Response
     {
-        $user = $request->user();
+        $actorData = $this->resolveActor($request);
+        $actor = $actorData['actor'];
 
-        $saved = $user ? $user->savedArticles()
+        $saved = $actor ? $actor->savedArticles()
             ->with(['category', 'user.authorProfile'])
             ->latest('published_at')
             ->paginate(12) : collect();
@@ -65,17 +95,20 @@ class ReaderActionController extends Controller
 
     public function postComment(Article $article, Request $request): RedirectResponse
     {
-        $user = $request->user();
+        $actorData = $this->resolveActor($request);
+        $type = $actorData['type'];
+        $actor = $actorData['actor'];
 
         $validated = $request->validate([
             'content' => 'required|string|min:3|max:1000',
-            'author_name' => $user ? 'nullable|string' : 'required|string|max:100',
+            'author_name' => $actor ? 'nullable|string' : 'required|string|max:100',
         ]);
 
         Comment::create([
             'article_id' => $article->id,
-            'user_id' => $user?->id,
-            'author_name' => $user ? $user->name : $validated['author_name'],
+            'reader_id' => $type === 'reader' ? $actor->id : null,
+            'user_id' => $type === 'user' ? $actor->id : null,
+            'author_name' => $actor ? $actor->name : $validated['author_name'],
             'content' => $validated['content'],
             'status' => 'approved',
         ]);

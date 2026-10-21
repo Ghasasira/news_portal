@@ -15,6 +15,9 @@ class CmsDashboardController extends Controller
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
+        if (! $user instanceof User || ! $user->canAccessCms()) {
+            abort(403, 'Unauthorized access to Newsroom CMS.');
+        }
 
         $stats = [
             'totalArticles' => Article::count(),

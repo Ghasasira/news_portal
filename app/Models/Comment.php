@@ -12,6 +12,7 @@ class Comment extends Model
 
     protected $fillable = [
         'article_id',
+        'reader_id',
         'user_id',
         'author_name',
         'content',
@@ -21,6 +22,11 @@ class Comment extends Model
     public function article(): BelongsTo
     {
         return $this->belongsTo(Article::class);
+    }
+
+    public function reader(): BelongsTo
+    {
+        return $this->belongsTo(Reader::class);
     }
 
     public function user(): BelongsTo

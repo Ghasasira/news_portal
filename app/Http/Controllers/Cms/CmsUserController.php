@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Cms;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuthorProfile;
+use App\Models\Reader;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Inertia\Response;
 class CmsUserController extends Controller
 {
     /**
-     * Display a listing of newsroom staff and registered users.
+     * Display a listing of newsroom staff and registered readers/customers.
      */
     public function index(Request $request): Response
     {
@@ -26,36 +27,54 @@ class CmsUserController extends Controller
             abort(403, 'Unauthorized. Only newsroom administrators can manage staff and users.');
         }
 
+        $activeTab = $request->input('tab', 'staff');
         $search = $request->input('search');
         $roleFilter = $request->input('role');
 
-        $query = User::query()
+        // 1. Staff Query (users table)
+        $staffQuery = User::query()
             ->with('authorProfile')
             ->withCount('articles')
             ->latest('id');
 
-        if ($search) {
-            $query->where(function ($q) use ($search) {
+        if ($activeTab === 'staff' && $search) {
+            $staffQuery->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('email', 'like', "%{$search}%");
             });
         }
 
         if ($roleFilter && $roleFilter !== 'all') {
-            $query->where('role', $roleFilter);
+            $staffQuery->where('role', $roleFilter);
         }
 
-        $users = $query->paginate(20)->withQueryString();
+        $staffUsers = $staffQuery->paginate(20, ['*'], 'staff_page')->withQueryString();
+
+        // 2. Readers Query (readers table)
+        $readersQuery = Reader::query()
+            ->withCount(['savedArticles', 'comments'])
+            ->latest('id');
+
+        if ($activeTab === 'readers' && $search) {
+            $readersQuery->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        $readers = $readersQuery->paginate(20, ['*'], 'readers_page')->withQueryString();
 
         $stats = [
-            'total' => User::count(),
+            'totalStaff' => User::count(),
+            'totalReaders' => Reader::count(),
+            'googleReaders' => Reader::whereNotNull('google_id')->count(),
             'admins' => User::whereIn('role', ['super_admin', 'chief_editor'])->count(),
             'editors' => User::where('role', 'section_editor')->count(),
             'authors' => User::whereIn('role', ['author', 'contributor'])->count(),
-            'readers' => User::whereIn('role', ['reader', 'auditor'])->count(),
+            'auditors' => User::where('role', 'auditor')->count(),
         ];
 
-        $roles = [
+        $staffRoles = [
             [
                 'id' => 'super_admin',
                 'name' => 'Super Administrator',
@@ -92,27 +111,23 @@ class CmsUserController extends Controller
                 'description' => 'Read-only access to editorial audit trails and corrections logs.',
                 'badge' => 'bg-amber-100 text-amber-800 border-amber-200',
             ],
-            [
-                'id' => 'reader',
-                'name' => 'Public Reader / Member',
-                'description' => 'Subscriber account for bookmarks, comments, and newsletter delivery.',
-                'badge' => 'bg-slate-100 text-slate-800 border-slate-200',
-            ],
         ];
 
         return Inertia::render('cms/users/index', [
-            'users' => $users,
+            'staffUsers' => $staffUsers,
+            'readers' => $readers,
+            'activeTab' => $activeTab,
             'filters' => [
                 'search' => $search ?? '',
                 'role' => $roleFilter ?? 'all',
             ],
             'stats' => $stats,
-            'availableRoles' => $roles,
+            'availableRoles' => $staffRoles,
         ]);
     }
 
     /**
-     * Onboard a new newsroom staff member or user.
+     * Onboard a new newsroom staff member.
      */
     public function store(Request $request): RedirectResponse
     {
@@ -125,7 +140,7 @@ class CmsUserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'role' => ['required', 'string', 'in:super_admin,chief_editor,section_editor,author,contributor,auditor,reader'],
+            'role' => ['required', 'string', 'in:super_admin,chief_editor,section_editor,author,contributor,auditor'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'beat' => ['nullable', 'string', 'max:150'],
             'bio' => ['nullable', 'string', 'max:1000'],
@@ -165,7 +180,7 @@ class CmsUserController extends Controller
     }
 
     /**
-     * Update an existing user's details, role, or credentials.
+     * Update an existing newsroom staff member's details, role, or credentials.
      */
     public function update(Request $request, User $user): RedirectResponse
     {
@@ -178,7 +193,7 @@ class CmsUserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'string', 'in:super_admin,chief_editor,section_editor,author,contributor,auditor,reader'],
+            'role' => ['required', 'string', 'in:super_admin,chief_editor,section_editor,author,contributor,auditor'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
             'beat' => ['nullable', 'string', 'max:150'],
             'bio' => ['nullable', 'string', 'max:1000'],
@@ -236,7 +251,7 @@ class CmsUserController extends Controller
     }
 
     /**
-     * Remove a user from the newsroom.
+     * Remove a staff user from the newsroom.
      */
     public function destroy(Request $request, User $user): RedirectResponse
     {
@@ -268,5 +283,22 @@ class CmsUserController extends Controller
         $user->delete();
 
         return back()->with('success', "Staff member {$userName} has been removed from the newsroom.");
+    }
+
+    /**
+     * Remove a reader/customer account.
+     */
+    public function destroyReader(Request $request, Reader $reader): RedirectResponse
+    {
+        $currentUser = $request->user();
+
+        if (! $currentUser->isAdmin()) {
+            abort(403, 'Unauthorized. Only newsroom administrators can manage readers.');
+        }
+
+        $readerName = $reader->name;
+        $reader->delete();
+
+        return back()->with('success', "Reader account {$readerName} has been removed.");
     }
 }

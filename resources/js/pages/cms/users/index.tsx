@@ -5,18 +5,20 @@ import {
     Users, 
     UserPlus, 
     Search, 
-    Shield, 
     Key, 
     CheckCircle2, 
     PenTool, 
     Trash2, 
     Edit, 
     X, 
-    Copy, 
     Check, 
     FileText, 
     Sparkles, 
-    AlertCircle 
+    Bookmark, 
+    MessageSquare, 
+    Globe, 
+    ShieldCheck,
+    Radio
 } from 'lucide-react';
 
 interface AuthorProfile {
@@ -39,6 +41,19 @@ interface UserItem {
     author_profile?: AuthorProfile;
 }
 
+interface ReaderItem {
+    id: number;
+    name: string;
+    email: string;
+    google_id?: string;
+    avatar_url?: string;
+    email_verified_at?: string;
+    created_at: string;
+    saved_articles_count: number;
+    comments_count: number;
+    is_active: boolean;
+}
+
 interface RoleOption {
     id: string;
     name: string;
@@ -46,32 +61,46 @@ interface RoleOption {
     badge: string;
 }
 
+interface Pagination<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    total: number;
+    links: { url: string | null; label: string; active: boolean }[];
+}
+
 interface Props {
-    users: {
-        data: UserItem[];
-        current_page: number;
-        last_page: number;
-        total: number;
-        links: { url: string | null; label: string; active: boolean }[];
-    };
+    staffUsers: Pagination<UserItem>;
+    readers: Pagination<ReaderItem>;
+    activeTab: 'staff' | 'readers';
     filters: {
         search: string;
         role: string;
     };
     stats: {
-        total: number;
+        totalStaff: number;
+        totalReaders: number;
+        googleReaders: number;
         admins: number;
         editors: number;
         authors: number;
-        readers: number;
+        auditors: number;
     };
     availableRoles: RoleOption[];
 }
 
-export default function CmsUsersIndex({ users, filters, stats, availableRoles }: Props) {
+export default function CmsUsersIndex({ 
+    staffUsers, 
+    readers, 
+    activeTab, 
+    filters, 
+    stats, 
+    availableRoles 
+}: Props) {
     const { auth } = usePage().props as unknown as { auth?: { user?: { id: number; name: string; role: string } } };
     const currentUserId = auth?.user?.id;
 
+    const [currentTab, setCurrentTab] = useState<'staff' | 'readers'>(activeTab || 'staff');
     const [searchQuery, setSearchQuery] = useState(filters.search || '');
     const [selectedRole, setSelectedRole] = useState(filters.role || 'all');
     const [isOnboardOpen, setIsOnboardOpen] = useState(false);
@@ -128,14 +157,20 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
         setTimeout(() => setCopiedPassword(false), 3000);
     };
 
+    const handleTabSwitch = (tab: 'staff' | 'readers') => {
+        setCurrentTab(tab);
+        setSearchQuery('');
+        router.get('/cms/users', { tab, search: '', role: 'all' }, { preserveState: true });
+    };
+
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.get('/cms/users', { search: searchQuery, role: selectedRole }, { preserveState: true });
+        router.get('/cms/users', { tab: currentTab, search: searchQuery, role: selectedRole }, { preserveState: true });
     };
 
     const handleRoleFilterChange = (role: string) => {
         setSelectedRole(role);
-        router.get('/cms/users', { search: searchQuery, role }, { preserveState: true });
+        router.get('/cms/users', { tab: currentTab, search: searchQuery, role }, { preserveState: true });
     };
 
     const handleOnboardSubmit = (e: React.FormEvent) => {
@@ -174,9 +209,15 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
         });
     };
 
-    const handleDeleteUser = (user: UserItem) => {
-        if (confirm(`Are you sure you want to remove ${user.name} from the newsroom? This action cannot be undone.`)) {
+    const handleDeleteStaffUser = (user: UserItem) => {
+        if (confirm(`Are you sure you want to remove staff member ${user.name} from the newsroom? This action cannot be undone.`)) {
             router.delete(`/cms/users/${user.id}`);
+        }
+    };
+
+    const handleDeleteReader = (reader: ReaderItem) => {
+        if (confirm(`Remove reader account ${reader.name}? This will purge bookmarks and comment associations.`)) {
+            router.delete(`/cms/readers/${reader.id}`);
         }
     };
 
@@ -195,36 +236,66 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
     };
 
     return (
-        <CmsLayout title="Newsroom Staff Directory & Onboarding">
-            <Head title="Staff Directory & Onboarding | NEWSROOM CMS" />
+        <CmsLayout title="User & Reader Directory">
+            <Head title="Staff & Readers Directory | NEWSROOM CMS" />
 
             {/* Top Header & Actions */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                         <Users className="w-5 h-5 text-blue-600" />
-                        Newsroom Staff & User Directory
+                        Directory & Access Controls
                     </h1>
                     <p className="text-xs text-slate-500 mt-0.5">
-                        Centralized staff onboarding, beat assignments, and editorial role access controls.
+                        Separated tables for Newsroom Editorial Staff and Public Readers / Customers.
                     </p>
                 </div>
 
+                {currentTab === 'staff' && (
+                    <button
+                        type="button"
+                        onClick={() => setIsOnboardOpen(true)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Onboard Staff Member</span>
+                    </button>
+                )}
+            </div>
+
+            {/* Tab Selector: Staff vs Readers */}
+            <div className="flex items-center gap-2 p-1 bg-slate-200/70 rounded-xl mb-6 max-w-md">
                 <button
                     type="button"
-                    onClick={() => setIsOnboardOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg shadow-xs transition cursor-pointer"
+                    onClick={() => handleTabSwitch('staff')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        currentTab === 'staff'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
-                    <UserPlus className="w-4 h-4" />
-                    <span>Onboard New User / Staff</span>
+                    <ShieldCheck className="w-4 h-4 text-blue-600" />
+                    <span>Newsroom Staff ({stats.totalStaff})</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => handleTabSwitch('readers')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition cursor-pointer ${
+                        currentTab === 'readers'
+                            ? 'bg-white text-slate-900 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    <Globe className="w-4 h-4 text-emerald-600" />
+                    <span>Public Readers ({stats.totalReaders})</span>
                 </button>
             </div>
 
             {/* KPI Stats Counters */}
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
                 <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Accounts</span>
-                    <span className="text-xl font-black text-slate-900 mt-1 block">{stats.total}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Staff Members</span>
+                    <span className="text-xl font-black text-slate-900 mt-1 block">{stats.totalStaff}</span>
                 </div>
                 <div className="bg-white p-3.5 rounded-xl border border-slate-200">
                     <span className="text-[10px] font-bold uppercase tracking-wider text-purple-600 block">Admins & Chiefs</span>
@@ -239,12 +310,12 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                     <span className="text-xl font-black text-emerald-900 mt-1 block">{stats.authors}</span>
                 </div>
                 <div className="bg-white p-3.5 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Public Readers</span>
-                    <span className="text-xl font-black text-slate-700 mt-1 block">{stats.readers}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">Google Connected</span>
+                    <span className="text-xl font-black text-indigo-900 mt-1 block">{stats.googleReaders}</span>
                 </div>
             </div>
 
-            {/* Search & Role Filters */}
+            {/* Search & Filters */}
             <div className="bg-white p-4 rounded-xl border border-slate-200 mb-6 space-y-3">
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                     <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
@@ -253,7 +324,7 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                             type="text"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by name or email address..."
+                            placeholder={`Search ${currentTab === 'staff' ? 'staff' : 'readers'} by name or email...`}
                             className="w-full pl-9 pr-20 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:bg-white transition"
                         />
                         <button
@@ -265,170 +336,304 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                     </form>
 
                     <div className="text-xs text-slate-500">
-                        Showing <strong className="text-slate-800">{users.total}</strong> registered members
+                        Showing <strong className="text-slate-800">
+                            {currentTab === 'staff' ? staffUsers.total : readers.total}
+                        </strong> accounts
                     </div>
                 </div>
 
-                {/* Role Pill Filters */}
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none text-xs">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filter:</span>
-                    <button
-                        type="button"
-                        onClick={() => handleRoleFilterChange('all')}
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
-                            selectedRole === 'all'
-                                ? 'bg-slate-900 text-white'
-                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                        }`}
-                    >
-                        All ({stats.total})
-                    </button>
-                    {availableRoles.map((role) => (
+                {/* Role Pill Filters (Only on Staff tab) */}
+                {currentTab === 'staff' && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none text-xs">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1">Role:</span>
                         <button
-                            key={role.id}
                             type="button"
-                            onClick={() => handleRoleFilterChange(role.id)}
-                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer whitespace-nowrap ${
-                                selectedRole === role.id
-                                    ? 'bg-blue-600 text-white'
+                            onClick={() => handleRoleFilterChange('all')}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer ${
+                                selectedRole === 'all'
+                                    ? 'bg-slate-900 text-white'
                                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                             }`}
                         >
-                            {role.name}
+                            All Staff ({stats.totalStaff})
                         </button>
-                    ))}
-                </div>
-            </div>
-
-            {/* Users Directory Table */}
-            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-slate-600">
-                        <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
-                            <tr>
-                                <th className="py-3 px-4">Staff Member / User</th>
-                                <th className="py-3 px-4">Role & Permissions</th>
-                                <th className="py-3 px-4">Beat / Desk</th>
-                                <th className="py-3 px-4">Reporting Output</th>
-                                <th className="py-3 px-4">Onboarded</th>
-                                <th className="py-3 px-4 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-sans">
-                            {users.data.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} className="py-12 text-center text-slate-400">
-                                        <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
-                                        <p className="text-sm font-medium">No staff members found matching criteria.</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                users.data.map((user) => (
-                                    <tr key={user.id} className="hover:bg-slate-50/80 transition">
-                                        <td className="py-3 px-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                                    {user.name.slice(0, 2)}
-                                                </div>
-                                                <div>
-                                                    <div className="flex items-center gap-1.5 font-bold text-slate-900">
-                                                        <span>{user.name}</span>
-                                                        {user.email_verified_at && (
-                                                            <span title="Verified">
-                                                                <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
-                                                            </span>
-                                                        )}
-                                                        {user.id === currentUserId && (
-                                                            <span className="text-[10px] bg-slate-100 text-slate-600 px-1 rounded font-normal">You</span>
-                                                        )}
-                                                    </div>
-                                                    <span className="text-slate-500 text-[11px] block">{user.email}</span>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRoleBadge(user.role)}`}>
-                                                {getRoleLabel(user.role)}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            {user.author_profile?.beat ? (
-                                                <span className="font-medium text-slate-800">
-                                                    {user.author_profile.beat}
-                                                </span>
-                                            ) : (
-                                                <span className="text-slate-400 italic">None</span>
-                                            )}
-                                        </td>
-                                        <td className="py-3 px-4">
-                                            <span className="font-semibold text-slate-800 flex items-center gap-1">
-                                                <FileText className="w-3.5 h-3.5 text-slate-400" />
-                                                {user.articles_count} {user.articles_count === 1 ? 'article' : 'articles'}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-4 text-slate-500">
-                                            {new Date(user.created_at).toLocaleDateString('en-US', {
-                                                month: 'short',
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            })}
-                                        </td>
-                                        <td className="py-3 px-4 text-right">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleStartEdit(user)}
-                                                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
-                                                    title="Edit User & Permissions"
-                                                >
-                                                    <Edit className="w-3.5 h-3.5" />
-                                                </button>
-                                                {user.id !== currentUserId && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleDeleteUser(user)}
-                                                        className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
-                                                        title="Remove from Newsroom"
-                                                    >
-                                                        <Trash2 className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                {users.last_page > 1 && (
-                    <div className="p-3 border-t border-slate-200 flex items-center justify-between text-xs">
-                        <span className="text-slate-500">
-                            Page {users.current_page} of {users.last_page}
-                        </span>
-                        <div className="flex gap-1">
-                            {users.links.map((link, i) => (
-                                <button
-                                    key={i}
-                                    type="button"
-                                    onClick={() => link.url && router.visit(link.url)}
-                                    disabled={!link.url}
-                                    dangerouslySetInnerHTML={{ __html: link.label }}
-                                    className={`px-2.5 py-1 rounded text-xs transition cursor-pointer ${
-                                        link.active
-                                            ? 'bg-blue-600 text-white font-bold'
-                                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
-                                    }`}
-                                />
-                            ))}
-                        </div>
+                        {availableRoles.map((role) => (
+                            <button
+                                key={role.id}
+                                type="button"
+                                onClick={() => handleRoleFilterChange(role.id)}
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium transition cursor-pointer whitespace-nowrap ${
+                                    selectedRole === role.id
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                }`}
+                            >
+                                {role.name}
+                            </button>
+                        ))}
                     </div>
                 )}
             </div>
 
-            {/* MODAL 1: ONBOARD NEW USER / STAFF */}
+            {/* TAB 1: NEWSROOM STAFF DIRECTORY TABLE */}
+            {currentTab === 'staff' && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-slate-600">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                                <tr>
+                                    <th className="py-3 px-4">Staff Member</th>
+                                    <th className="py-3 px-4">Role & Permissions</th>
+                                    <th className="py-3 px-4">Beat / Desk</th>
+                                    <th className="py-3 px-4">Published Output</th>
+                                    <th className="py-3 px-4">Onboarded</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-sans">
+                                {staffUsers.data.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                                            <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                                            <p className="text-sm font-medium">No staff members found.</p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    staffUsers.data.map((user) => (
+                                        <tr key={user.id} className="hover:bg-slate-50/80 transition">
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                                        {user.name.slice(0, 2)}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                                                            <span>{user.name}</span>
+                                                            {user.email_verified_at && (
+                                                                <span title="Verified">
+                                                                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-500" />
+                                                                </span>
+                                                            )}
+                                                            {user.id === currentUserId && (
+                                                                <span className="text-[10px] bg-slate-100 text-slate-600 px-1 rounded font-normal">You</span>
+                                                            )}
+                                                        </div>
+                                                        <span className="text-slate-500 text-[11px] block">{user.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border ${getRoleBadge(user.role)}`}>
+                                                    {getRoleLabel(user.role)}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {user.author_profile?.beat ? (
+                                                    <span className="font-medium text-slate-800">
+                                                        {user.author_profile.beat}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">None</span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className="font-semibold text-slate-800 flex items-center gap-1">
+                                                    <FileText className="w-3.5 h-3.5 text-slate-400" />
+                                                    {user.articles_count} {user.articles_count === 1 ? 'story' : 'stories'}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-slate-500">
+                                                {new Date(user.created_at).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleStartEdit(user)}
+                                                        className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded transition cursor-pointer"
+                                                        title="Edit Staff Member"
+                                                    >
+                                                        <Edit className="w-3.5 h-3.5" />
+                                                    </button>
+                                                    {user.id !== currentUserId && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleDeleteStaffUser(user)}
+                                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                                                            title="Remove from Newsroom"
+                                                        >
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {staffUsers.last_page > 1 && (
+                        <div className="p-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                            <span className="text-slate-500">
+                                Page {staffUsers.current_page} of {staffUsers.last_page}
+                            </span>
+                            <div className="flex gap-1">
+                                {staffUsers.links.map((link, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => link.url && router.visit(link.url)}
+                                        disabled={!link.url}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                        className={`px-2.5 py-1 rounded text-xs transition cursor-pointer ${
+                                            link.active
+                                                ? 'bg-blue-600 text-white font-bold'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* TAB 2: PUBLIC READERS & CUSTOMERS TABLE */}
+            {currentTab === 'readers' && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs text-slate-600">
+                            <thead className="bg-slate-50 border-b border-slate-200 text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                                <tr>
+                                    <th className="py-3 px-4">Reader / Member</th>
+                                    <th className="py-3 px-4">Auth Channel</th>
+                                    <th className="py-3 px-4">Saved Bookmarks</th>
+                                    <th className="py-3 px-4">Comments Posted</th>
+                                    <th className="py-3 px-4">Member Since</th>
+                                    <th className="py-3 px-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 font-sans">
+                                {readers.data.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} className="py-12 text-center text-slate-400">
+                                            <Globe className="w-8 h-8 mx-auto mb-2 opacity-40 text-emerald-600" />
+                                            <p className="text-sm font-medium">No public readers registered yet.</p>
+                                            <p className="text-xs text-slate-400 mt-1">
+                                                Readers will appear here once Google OAuth sign-in is launched.
+                                            </p>
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    readers.data.map((reader) => (
+                                        <tr key={reader.id} className="hover:bg-slate-50/80 transition">
+                                            <td className="py-3 px-4">
+                                                <div className="flex items-center gap-3">
+                                                    {reader.avatar_url ? (
+                                                        <img
+                                                            src={reader.avatar_url}
+                                                            alt={reader.name}
+                                                            className="w-8 h-8 rounded-full object-cover shrink-0"
+                                                        />
+                                                    ) : (
+                                                        <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                                            {reader.name.slice(0, 2)}
+                                                        </div>
+                                                    )}
+                                                    <div>
+                                                        <span className="font-bold text-slate-900 block">{reader.name}</span>
+                                                        <span className="text-slate-500 text-[11px] block">{reader.email}</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                {reader.google_id ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                                        <svg className="w-3 h-3" viewBox="0 0 24 24">
+                                                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                                                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                                                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+                                                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                                                        </svg>
+                                                        <span>Google OAuth</span>
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                                        <span>Direct Account</span>
+                                                    </span>
+                                                )}
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className="font-semibold text-slate-800 flex items-center gap-1">
+                                                    <Bookmark className="w-3.5 h-3.5 text-slate-400" />
+                                                    {reader.saved_articles_count} saved
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4">
+                                                <span className="font-semibold text-slate-800 flex items-center gap-1">
+                                                    <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                                                    {reader.comments_count} comments
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-4 text-slate-500">
+                                                {new Date(reader.created_at).toLocaleDateString('en-US', {
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                })}
+                                            </td>
+                                            <td className="py-3 px-4 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeleteReader(reader)}
+                                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition cursor-pointer"
+                                                    title="Remove Reader Account"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {/* Pagination */}
+                    {readers.last_page > 1 && (
+                        <div className="p-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                            <span className="text-slate-500">
+                                Page {readers.current_page} of {readers.last_page}
+                            </span>
+                            <div className="flex gap-1">
+                                {readers.links.map((link, i) => (
+                                    <button
+                                        key={i}
+                                        type="button"
+                                        onClick={() => link.url && router.visit(link.url)}
+                                        disabled={!link.url}
+                                        dangerouslySetInnerHTML={{ __html: link.label }}
+                                        className={`px-2.5 py-1 rounded text-xs transition cursor-pointer ${
+                                            link.active
+                                                ? 'bg-blue-600 text-white font-bold'
+                                                : 'bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed'
+                                        }`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* MODAL 1: ONBOARD NEW STAFF MEMBER */}
             {isOnboardOpen && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
@@ -436,10 +641,10 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                             <div>
                                 <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                                     <UserPlus className="w-4 h-4 text-blue-600" />
-                                    Onboard Newsroom Staff or User
+                                    Onboard Newsroom Staff Member
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    Admins explicitly onboard users since self-registration is closed.
+                                    Staff are registered into the users table with newsroom permissions.
                                 </p>
                             </div>
                             <button
@@ -452,7 +657,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                         </div>
 
                         <form onSubmit={handleOnboardSubmit} className="p-5 space-y-4">
-                            {/* Full Name */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                                     Full Name *
@@ -470,7 +674,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 )}
                             </div>
 
-                            {/* Email Address */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                                     Email Address *
@@ -488,10 +691,9 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 )}
                             </div>
 
-                            {/* Role Selection */}
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                                    Select Role & Permissions *
+                                    Editorial Role *
                                 </label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {availableRoles.map((role) => (
@@ -528,7 +730,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 )}
                             </div>
 
-                            {/* Password Setup & Quick Random Generator */}
                             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
@@ -580,7 +781,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 </div>
                             </div>
 
-                            {/* Contextual Author Profile Fields (Shown for editorial roles) */}
                             {isEditorialRole(onboardForm.data.role) && (
                                 <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-3">
                                     <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
@@ -629,7 +829,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 </div>
                             )}
 
-                            {/* Submit & Cancel Buttons */}
                             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                                 <button
                                     type="button"
@@ -643,7 +842,7 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                     disabled={onboardForm.processing}
                                     className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition shadow-xs cursor-pointer disabled:opacity-50"
                                 >
-                                    {onboardForm.processing ? 'Onboarding...' : 'Complete Onboarding'}
+                                    {onboardForm.processing ? 'Onboarding...' : 'Complete Staff Onboarding'}
                                 </button>
                             </div>
                         </form>
@@ -651,7 +850,7 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                 </div>
             )}
 
-            {/* MODAL 2: EDIT USER & CREDENTIALS */}
+            {/* MODAL 2: EDIT STAFF MEMBER */}
             {editingUser && (
                 <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200">
@@ -724,7 +923,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 </select>
                             </div>
 
-                            {/* Password Reset (Optional) */}
                             <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-3">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
@@ -757,7 +955,6 @@ export default function CmsUsersIndex({ users, filters, stats, availableRoles }:
                                 </div>
                             </div>
 
-                            {/* Editorial Details */}
                             {isEditorialRole(editForm.data.role) && (
                                 <div className="p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-200 space-y-3">
                                     <div className="text-xs font-bold text-emerald-900">

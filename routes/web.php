@@ -45,11 +45,11 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Editorial CMS Routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth:web', 'verified'])->group(function () {
     Route::get('/dashboard', fn () => redirect('/cms'))->name('dashboard');
 });
 
-Route::middleware(['auth', 'verified'])->prefix('cms')->name('cms.')->group(function () {
+Route::middleware(['auth:web', 'verified'])->prefix('cms')->name('cms.')->group(function () {
     Route::get('/', CmsDashboardController::class)->name('dashboard');
 
     Route::resource('articles', CmsArticleController::class)->except(['show']);
@@ -64,6 +64,7 @@ Route::middleware(['auth', 'verified'])->prefix('cms')->name('cms.')->group(func
     Route::delete('media/{media}', [CmsMediaController::class, 'destroy'])->name('media.destroy');
 
     Route::resource('users', CmsUserController::class)->except(['show']);
+    Route::delete('readers/{reader}', [CmsUserController::class, 'destroyReader'])->name('readers.destroy');
 });
 
 require __DIR__.'/settings.php';

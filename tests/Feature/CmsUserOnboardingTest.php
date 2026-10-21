@@ -57,7 +57,8 @@ class CmsUserOnboardingTest extends TestCase
         $response->assertOk();
         $response->assertInertia(fn ($page) => $page
             ->component('cms/users/index')
-            ->has('users.data')
+            ->has('staffUsers.data')
+            ->has('readers.data')
             ->has('stats')
             ->has('availableRoles')
         );
