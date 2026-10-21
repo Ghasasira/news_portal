@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  <url>
+    <loc>http://localhost:8000/technology/global-powers-sign-historic-frontier-ai-safety-framework-in-geneva</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T14:30:28+00:00</news:publication_date>
+      <news:title>Global Powers Sign Historic Frontier AI Safety Framework in Geneva</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/business/central-banks-signal-coordinated-shift-toward-renewable-bond-guarantees</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T12:30:28+00:00</news:publication_date>
+      <news:title>Central Banks Signal Coordinated Shift Toward Renewable Bond Guarantees</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/science/next-gen-solid-state-batteries-enter-volume-production-ahead-of-schedule</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T10:30:28+00:00</news:publication_date>
+      <news:title>Next-Gen Solid State Batteries Enter Volume Production Ahead of Schedule</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/science/space-agency-confirms-water-ice-deposits-in-deep-lunar-crater-outcrops</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T08:30:28+00:00</news:publication_date>
+      <news:title>Space Agency Confirms Water-Ice Deposits in Deep Lunar Crater Outcrops</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/politics/parliamentary-coalition-reaches-compromise-on-comprehensive-digital-rights-bill</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T04:30:28+00:00</news:publication_date>
+      <news:title>Parliamentary Coalition Reaches Compromise on Comprehensive Digital Rights Bill</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/culture/urban-mobility-revolution-electric-light-rail-transforms-metro-commutes</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-21T01:30:28+00:00</news:publication_date>
+      <news:title>Urban Mobility Revolution: Electric Light-Rail Transforms Metro Commutes</news:title>
+    </news:news>
+  </url>
+  <url>
+    <loc>http://localhost:8000/technology/the-ethical-imperative-of-open-source-compute-an-editorial-essay</loc>
+    <news:news>
+      <news:publication>
+        <news:name>Laravel</news:name>
+        <news:language>en</news:language>
+      </news:publication>
+      <news:publication_date>2026-10-20T22:30:28+00:00</news:publication_date>
+      <news:title>The Ethical Imperative of Open Source Compute: An Editorial Essay</news:title>
+    </news:news>
+  </url>
+</urlset>

@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
+import { toast } from 'sonner';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category } from '@/types/news';
+import { useBookmarks } from '@/hooks/use-bookmarks';
 import { 
     Clock, 
     Bookmark, 
@@ -37,21 +39,27 @@ export default function ArticlePage({
     faqLd,
     categories,
 }: Props) {
-    const [saved, setSaved] = useState(initialSaved);
+    const { isSaved: localIsSaved, toggle: toggleBookmark } = useBookmarks(article);
+    const [saved, setSaved] = useState(initialSaved || localIsSaved);
     const [copied, setCopied] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [commentContent, setCommentContent] = useState('');
     const [commentAuthor, setCommentAuthor] = useState('');
 
+    useEffect(() => {
+        setSaved(initialSaved || localIsSaved);
+    }, [initialSaved, localIsSaved]);
+
     const handleCopy = () => {
         navigator.clipboard.writeText(window.location.href);
         setCopied(true);
+        toast.success('Article link copied to clipboard!');
         setTimeout(() => setCopied(false), 2000);
     };
 
     const handleBookmark = () => {
+        toggleBookmark(article);
         setSaved(!saved);
-        router.post(`/articles/${article.id}/bookmark`, {}, { preserveScroll: true });
     };
 
     const handleCommentSubmit = (e: React.FormEvent) => {
@@ -67,6 +75,7 @@ export default function ArticlePage({
             {
                 preserveScroll: true,
                 onSuccess: () => {
+                    toast.success('Your comment has been posted!');
                     setCommentContent('');
                     setCommentAuthor('');
                 },

@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
+import { toast } from 'sonner';
+import { WeatherWidget } from '@/components/weather-widget';
+import { SubscribeModal } from '@/components/subscribe-modal';
 import { 
     Search, 
     Bookmark, 
@@ -29,6 +32,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
     const { auth } = usePage().props as unknown as { auth?: { user?: { name: string; role: string } } };
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,10 +52,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                         <span className="font-medium text-slate-200">
                             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
-                        <span className="hidden md:inline-flex items-center gap-1.5 text-slate-400">
-                            <Sun className="w-3.5 h-3.5 text-amber-400" />
-                            Geneva 18°C
-                        </span>
+                        <WeatherWidget />
                         <span className="hidden lg:inline-flex items-center gap-1.5 text-slate-400">
                             <Flame className="w-3.5 h-3.5 text-rose-400" />
                             Frontier AI Summit
@@ -99,9 +100,13 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                         ) : (
                             <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
                                 <Link href="/login" className="hover:text-white transition">Log in</Link>
-                                <Link href="/register" className="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-0.5 rounded font-medium transition">
+                                <button
+                                    type="button"
+                                    onClick={() => setSubscribeModalOpen(true)}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white px-2.5 py-0.5 rounded font-medium transition cursor-pointer"
+                                >
                                     Subscribe
-                                </Link>
+                                </button>
                             </div>
                         )}
                     </div>
@@ -124,14 +129,9 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                             <div className="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white font-black text-lg tracking-tighter shadow-sm group-hover:bg-blue-700 transition">
                                 N
                             </div>
-                            <div>
-                                <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-serif">
-                                    NEWSPORTAL
-                                </span>
-                                <span className="hidden sm:inline-block ml-2 text-[10px] uppercase font-bold tracking-widest px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
-                                    Global Edition
-                                </span>
-                            </div>
+                            <span className="text-xl sm:text-2xl font-black tracking-tight text-slate-950 font-serif">
+                                NEWSPORTAL
+                            </span>
                         </Link>
                     </div>
 
@@ -320,8 +320,15 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                             <form 
                                 onSubmit={(e) => {
                                     e.preventDefault();
-                                    const input = (e.currentTarget.elements.namedItem('email') as HTMLInputElement).value;
-                                    router.post('/newsletter/subscribe', { email: input });
+                                    const form = e.currentTarget;
+                                    const input = (form.elements.namedItem('email') as HTMLInputElement).value;
+                                    router.post('/newsletter/subscribe', { email: input }, {
+                                        preserveScroll: true,
+                                        onSuccess: () => {
+                                            toast.success('Thank you for subscribing to our morning brief!');
+                                            form.reset();
+                                        },
+                                    });
                                 }}
                                 className="space-y-2"
                             >
@@ -334,7 +341,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                                 />
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs py-2 rounded transition"
+                                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs py-2 rounded transition cursor-pointer"
                                 >
                                     Join 140K+ Readers
                                 </button>
@@ -349,7 +356,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                         <div className="flex items-center gap-4">
                             <a href="#" className="hover:text-slate-300">Privacy Notice</a>
                             <a href="#" className="hover:text-slate-300">Terms of Service</a>
-                            <a href="#" className="hover:text-slate-300">Sitemap</a>
+                            <a href="/sitemap.xml" target="_blank" className="hover:text-slate-300">Sitemap</a>
                         </div>
                     </div>
                 </div>
@@ -374,6 +381,12 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                     <span>{auth?.user ? (isStaff ? 'CMS' : 'Profile') : 'Login'}</span>
                 </Link>
             </div>
+
+            {/* Global Subscribe Modal */}
+            <SubscribeModal 
+                isOpen={subscribeModalOpen} 
+                onClose={() => setSubscribeModalOpen(false)} 
+            />
         </div>
     );
 }
