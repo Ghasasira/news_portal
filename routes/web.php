@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Cms\CmsArticleController;
 use App\Http\Controllers\Cms\CmsDashboardController;
+use App\Http\Controllers\Cms\CmsMediaController;
 use App\Http\Controllers\Cms\CmsTaxonomyController;
 use App\Http\Controllers\Public\ArticleController;
 use App\Http\Controllers\Public\AuthorController;
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'verified'])->prefix('cms')->name('cms.')->group(func
     Route::get('taxonomy', [CmsTaxonomyController::class, 'index'])->name('taxonomy.index');
     Route::post('taxonomy/categories', [CmsTaxonomyController::class, 'storeCategory'])->name('taxonomy.categories.store');
     Route::post('taxonomy/topics', [CmsTaxonomyController::class, 'storeTopic'])->name('taxonomy.topics.store');
+
+    Route::get('media', [CmsMediaController::class, 'index'])->name('media.index');
+    Route::post('media/upload', [CmsMediaController::class, 'upload'])->name('media.upload');
+    Route::delete('media/{media}', [CmsMediaController::class, 'destroy'])->name('media.destroy');
 });
 
 require __DIR__.'/settings.php';

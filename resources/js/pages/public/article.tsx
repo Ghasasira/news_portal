@@ -19,6 +19,7 @@ import {
     MessageSquare,
     Send
 } from 'lucide-react';
+import { SocialShareBar } from '@/components/social-share-bar';
 
 interface Props {
     article: Article;
@@ -41,7 +42,6 @@ export default function ArticlePage({
 }: Props) {
     const { isSaved: localIsSaved, toggle: toggleBookmark } = useBookmarks(article);
     const [saved, setSaved] = useState(initialSaved || localIsSaved);
-    const [copied, setCopied] = useState(false);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [commentContent, setCommentContent] = useState('');
     const [commentAuthor, setCommentAuthor] = useState('');
@@ -49,13 +49,6 @@ export default function ArticlePage({
     useEffect(() => {
         setSaved(initialSaved || localIsSaved);
     }, [initialSaved, localIsSaved]);
-
-    const handleCopy = () => {
-        navigator.clipboard.writeText(window.location.href);
-        setCopied(true);
-        toast.success('Article link copied to clipboard!');
-        setTimeout(() => setCopied(false), 2000);
-    };
 
     const handleBookmark = () => {
         toggleBookmark(article);
@@ -170,6 +163,8 @@ export default function ArticlePage({
 
                         {/* Interactive Share & Bookmark buttons */}
                         <div className="flex items-center gap-2">
+                            <SocialShareBar title={article.title} />
+
                             <button
                                 type="button"
                                 onClick={handleBookmark}
@@ -183,25 +178,6 @@ export default function ArticlePage({
                                 <Bookmark className="w-4 h-4 fill-current" />
                                 <span className="hidden sm:inline">{saved ? 'Saved' : 'Save'}</span>
                             </button>
-
-                            <button
-                                type="button"
-                                onClick={handleCopy}
-                                className="p-2 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                                title="Copy Article URL"
-                            >
-                                {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-                            </button>
-
-                            <a
-                                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(article.title)}&url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="p-2 rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
-                                title="Share on X"
-                            >
-                                <Twitter className="w-4 h-4" />
-                            </a>
 
                             <a
                                 href={`/${article.category?.slug}/${article.slug}.md`}
@@ -345,7 +321,14 @@ export default function ArticlePage({
                     </div>
                 )}
 
-                {/* 8. COMMENTS SECTION */}
+                {/* 8. SOCIAL ENGAGEMENT & SHARING */}
+                <SocialShareBar 
+                    title={article.title} 
+                    variant="expanded" 
+                    className="mt-8 mb-4" 
+                />
+
+                {/* 9. COMMENTS SECTION */}
                 <section className="mt-12 pt-8 border-t border-slate-200">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-xl font-bold font-serif text-slate-900 flex items-center gap-2">

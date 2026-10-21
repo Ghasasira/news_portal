@@ -133,3 +133,27 @@ export interface PaginatedData<T> {
         active: boolean;
     }>;
 }
+
+export interface MediaItem {
+    id: number;
+    user_id: number | null;
+    filename: string;
+    original_name: string;
+    disk_path: string;
+    url: string;
+    mime_type: string;
+    original_size_bytes: number;
+    optimized_size_bytes: number;
+    formatted_original_size?: string;
+    formatted_optimized_size?: string;
+    savings_percentage?: number;
+    width: number | null;
+    height: number | null;
+    alt_text: string | null;
+    caption: string | null;
+    created_at: string;
+    updated_at: string;
+    user?: { id: number; name: string };
+}
+
+

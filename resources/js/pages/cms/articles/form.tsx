@@ -14,8 +14,11 @@ import {
     FileText, 
     Layers,
     Clock,
-    HelpCircle
+    HelpCircle,
+    UploadCloud
 } from 'lucide-react';
+import { RichTextEditor } from '@/components/cms/rich-text-editor';
+import { MediaLibraryModal } from '@/components/cms/media-library-modal';
 
 interface Props {
     article: Article | null;
@@ -26,6 +29,7 @@ interface Props {
 
 export default function CmsArticleForm({ article, categories, topics, tags }: Props) {
     const isEdit = Boolean(article);
+    const [heroMediaModalOpen, setHeroMediaModalOpen] = useState(false);
 
     const { data, setData, post, put, processing, errors } = useForm({
         title: article?.title || '',
@@ -178,25 +182,22 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                         </div>
 
                         {/* Article Body */}
-                        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-2">
-                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div className="space-y-2">
+                            <div className="flex items-center justify-between pb-1">
                                 <label className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                                     <FileText className="w-4 h-4 text-blue-600" />
-                                    Article Body (HTML / Prose Format) *
+                                    Article Story & Editorial Body *
                                 </label>
-                                <span className="text-[11px] text-slate-400 font-mono">
-                                    {data.body.split(/\s+/).filter(Boolean).length} words
+                                <span className="text-[11px] text-slate-500 font-medium">
+                                    Rich text formatting with visual & HTML modes
                                 </span>
                             </div>
-                            <textarea
+                            <RichTextEditor
                                 value={data.body}
-                                onChange={(e) => setData('body', e.target.value)}
-                                rows={14}
-                                placeholder="Write or paste your article content here. Standard HTML tags (<p>, <h2>, <blockquote>, <strong>) are supported..."
-                                className="w-full font-mono text-xs sm:text-sm border border-slate-300 rounded-xl p-4 focus:ring-2 focus:ring-blue-600 focus:outline-none leading-relaxed"
-                                required
+                                onChange={(val) => setData('body', val)}
+                                error={errors.body}
+                                placeholder="Compose the narrative story. Use bold, headings, blockquotes, lists, links, and inline images..."
                             />
-                            {errors.body && <p className="text-xs text-rose-600 mt-1">{errors.body}</p>}
                         </div>
 
                         {/* AEO & GEO INTELLIGENCE STUDIO */}
@@ -441,27 +442,60 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
 
                         {/* 3. HERO MEDIA */}
                         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3">
-                            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 pb-2 border-b border-slate-100 flex items-center gap-1.5">
-                                <Image className="w-4 h-4 text-slate-500" />
-                                Hero Photography
-                            </h3>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                                    Image URL (CDN / Unsplash)
-                                </label>
-                                <input
-                                    type="url"
-                                    value={data.hero_image_url}
-                                    onChange={(e) => setData('hero_image_url', e.target.value)}
-                                    placeholder="https://images.unsplash.com/..."
-                                    className="w-full text-xs border border-slate-300 rounded-lg p-2 focus:outline-none"
-                                />
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-1.5">
+                                    <Image className="w-4 h-4 text-blue-600" />
+                                    Hero Photography
+                                </h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setHeroMediaModalOpen(true)}
+                                    className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition"
+                                >
+                                    <UploadCloud className="w-3.5 h-3.5" />
+                                    <span>Upload / Library</span>
+                                </button>
                             </div>
 
-                            {data.hero_image_url && (
-                                <div className="aspect-video rounded-lg overflow-hidden bg-slate-100 border border-slate-200">
-                                    <img src={data.hero_image_url} alt="Hero Preview" className="w-full h-full object-cover" />
+                            {data.hero_image_url ? (
+                                <div className="space-y-2">
+                                    <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200 group">
+                                        <img src={data.hero_image_url} alt="Hero Preview" className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-slate-950/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setHeroMediaModalOpen(true)}
+                                                className="px-3 py-1.5 bg-white text-slate-900 rounded-lg text-xs font-bold shadow-xs hover:bg-slate-100 transition"
+                                            >
+                                                Change Image
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setData('hero_image_url', '')}
+                                                className="px-3 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold shadow-xs hover:bg-rose-700 transition"
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <span className="text-[10px] text-slate-400 font-mono block truncate" title={data.hero_image_url}>
+                                        {data.hero_image_url}
+                                    </span>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={() => setHeroMediaModalOpen(true)}
+                                    className="border-2 border-dashed border-slate-200 hover:border-blue-500 rounded-xl p-5 text-center cursor-pointer bg-slate-50 hover:bg-blue-50/40 transition group"
+                                >
+                                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-blue-600 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition shadow-2xs">
+                                        <UploadCloud className="w-5 h-5" />
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-800 block">
+                                        Upload or Select Lead Image
+                                    </span>
+                                    <span className="text-[11px] text-slate-500 mt-0.5 block">
+                                        Auto-compressed to lightweight WebP
+                                    </span>
                                 </div>
                             )}
 
@@ -475,6 +509,19 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                                     onChange={(e) => setData('hero_image_caption', e.target.value)}
                                     placeholder="Photo: Reuters / Jane Doe"
                                     className="w-full text-xs border border-slate-300 rounded-lg p-2 focus:outline-none"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                                    Or paste external CDN / Unsplash URL:
+                                </label>
+                                <input
+                                    type="url"
+                                    value={data.hero_image_url}
+                                    onChange={(e) => setData('hero_image_url', e.target.value)}
+                                    placeholder="https://images.unsplash.com/..."
+                                    className="w-full text-xs border border-slate-200 bg-slate-50 rounded-lg p-1.5 focus:bg-white focus:outline-none"
                                 />
                             </div>
                         </div>
@@ -528,6 +575,20 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                     </div>
                 </div>
             </form>
+
+            {/* Hero Media Library Modal */}
+            <MediaLibraryModal
+                isOpen={heroMediaModalOpen}
+                onClose={() => setHeroMediaModalOpen(false)}
+                onSelect={(media) => {
+                    setData((prev) => ({
+                        ...prev,
+                        hero_image_url: media.url,
+                        hero_image_caption: media.caption || prev.hero_image_caption,
+                    }));
+                }}
+                title="Select Hero Photography"
+            />
         </CmsLayout>
     );
 }
