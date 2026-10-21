@@ -167,9 +167,7 @@ return [
     */
 
     'features' => [
-        /* @chisel-registration */
-        Features::registration(),
-        /* @end-chisel-registration */
+        // Features::registration(), // Self-registration disabled: admin-only staff onboarding
         Features::resetPasswords(),
         /* @chisel-email-verification */
         Features::emailVerification(),

@@ -9,7 +9,8 @@ import {
     LogOut, 
     Shield, 
     ChevronRight,
-    Sparkles
+    Sparkles,
+    Users
 } from 'lucide-react';
 
 interface Props {
@@ -76,6 +77,15 @@ export default function CmsLayout({ children, title }: Props) {
                             <Tags className="w-4 h-4 text-purple-400" />
                             <span>Taxonomy & Hubs</span>
                         </Link>
+                        {['super_admin', 'chief_editor'].includes(auth?.user?.role || '') && (
+                            <Link
+                                href="/cms/users"
+                                className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-semibold hover:bg-slate-800 hover:text-white transition"
+                            >
+                                <Users className="w-4 h-4 text-cyan-400" />
+                                <span>Staff & Onboarding</span>
+                            </Link>
+                        )}
                     </div>
 
                     <div className="px-3 py-2 space-y-1 border-t border-slate-800/80">

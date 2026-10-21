@@ -10,15 +10,10 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->skipUnlessFortifyHas(Features::registration());
-    }
-
     public function test_registration_screen_can_be_rendered()
     {
+        $this->skipUnlessFortifyHas(Features::registration());
+
         $response = $this->get(route('register'));
 
         $response->assertOk();
@@ -26,6 +21,8 @@ class RegistrationTest extends TestCase
 
     public function test_new_users_can_register()
     {
+        $this->skipUnlessFortifyHas(Features::registration());
+
         $response = $this->post(route('register.store'), [
             'name' => 'Test User',
             'email' => 'test@example.com',
@@ -35,5 +32,19 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('cms.dashboard', absolute: false));
+    }
+
+    public function test_public_registration_is_disabled()
+    {
+        $response = $this->get('/register');
+        $response->assertNotFound();
+
+        $postResponse = $this->post('/register', [
+            'name' => 'Unauthorized User',
+            'email' => 'unauthorized@example.com',
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+        $this->assertTrue(in_array($postResponse->status(), [404, 405]));
     }
 }
