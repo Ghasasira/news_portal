@@ -17,8 +17,8 @@ export interface LocalBookmark {
 }
 
 export function useBookmarks(article?: Article | null) {
-    const { auth } = usePage().props as unknown as { auth?: { user?: { id: number; name: string } } };
-    const isLoggedIn = Boolean(auth?.user);
+    const { auth } = usePage().props as unknown as { auth?: { user?: { id: number; name: string }; reader?: { id: number; name: string } } };
+    const isLoggedIn = Boolean(auth?.reader || auth?.user);
 
     const [isSaved, setIsSaved] = useState(false);
 

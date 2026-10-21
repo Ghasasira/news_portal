@@ -29,7 +29,12 @@ interface Props {
 }
 
 export default function PublicLayout({ children, categories = [], breakingNews }: Props) {
-    const { auth } = usePage().props as unknown as { auth?: { user?: { name: string; role: string } } };
+    const { auth } = usePage().props as unknown as { 
+        auth?: { 
+            user?: { name: string; role: string };
+            reader?: { name: string; email: string };
+        } 
+    };
     const [searchQuery, setSearchQuery] = useState('');
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [subscribeModalOpen, setSubscribeModalOpen] = useState(false);
@@ -42,6 +47,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
     };
 
     const isStaff = auth?.user && ['super_admin', 'chief_editor', 'section_editor', 'author', 'contributor'].includes(auth.user.role);
+    const isAuthenticated = Boolean(auth?.user || auth?.reader);
 
     return (
         <div className="min-h-screen bg-[#FDFDFC] text-slate-900 flex flex-col font-sans antialiased selection:bg-blue-600 selection:text-white">
@@ -82,18 +88,42 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                         {auth?.user ? (
                             <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
                                 <Link href="/saved" className="hover:text-white transition flex items-center gap-1">
-                                    <Bookmark className="w-3.5 h-3.5" />
+                                    <Bookmark className="w-3.5 h-3.5 text-blue-400" />
                                     <span className="hidden sm:inline">Saved</span>
                                 </Link>
-                                <Link href="/settings/profile" className="font-medium text-slate-200 hover:text-white transition">
-                                    {auth.user.name}
+                                <Link href="/cms" className="font-medium text-slate-200 hover:text-white transition text-xs flex items-center gap-1.5">
+                                    <span>{auth.user.name}</span>
+                                    <span className="bg-blue-600/50 text-blue-200 text-[10px] px-1.5 py-0.2 rounded font-mono">CMS</span>
                                 </Link>
+                            </div>
+                        ) : auth?.reader ? (
+                            <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
+                                <Link href="/saved" className="hover:text-white transition flex items-center gap-1">
+                                    <Bookmark className="w-3.5 h-3.5 text-blue-400 fill-blue-400" />
+                                    <span className="hidden sm:inline">Saved</span>
+                                </Link>
+                                <span className="font-medium text-slate-200 text-xs">
+                                    {auth.reader.name}
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => router.post('/reader/logout')}
+                                    className="text-slate-400 hover:text-white text-[11px] transition cursor-pointer"
+                                >
+                                    Sign Out
+                                </button>
                             </div>
                         ) : (
                             <div className="flex items-center gap-3 pl-3 border-l border-slate-700">
-                                <Link href="/saved" className="hover:text-white transition flex items-center gap-1">
+                                <Link href="/reader/login" className="hover:text-white transition flex items-center gap-1">
                                     <Bookmark className="w-3.5 h-3.5" />
                                     <span className="hidden sm:inline">Saved</span>
+                                </Link>
+                                <Link
+                                    href="/reader/login"
+                                    className="text-slate-300 hover:text-white transition text-[11px]"
+                                >
+                                    Sign In
                                 </Link>
                                 <button
                                     type="button"
@@ -151,7 +181,7 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                             <Search className="w-5 h-5" />
                         </Link>
                         <Link
-                            href="/saved"
+                            href={isAuthenticated ? "/saved" : "/reader/login"}
                             className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full border border-slate-200 text-slate-700 hover:bg-slate-50 transition"
                         >
                             <Bookmark className="w-3.5 h-3.5 text-blue-600" />
@@ -232,9 +262,28 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                             ))}
                         </div>
                         <div className="pt-4 border-t border-slate-200 space-y-2">
-                            <Link href="/saved" className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100">
+                            <Link 
+                                href={isAuthenticated ? "/saved" : "/reader/login"} 
+                                className="block px-3 py-2 text-sm font-medium text-slate-700 rounded-md hover:bg-slate-100"
+                            >
                                 Saved Bookmarks
                             </Link>
+                            {!isAuthenticated ? (
+                                <Link 
+                                    href="/reader/login" 
+                                    className="block px-3 py-2 text-sm font-medium text-blue-600 rounded-md hover:bg-blue-50"
+                                >
+                                    Reader Sign In / Free Account
+                                </Link>
+                            ) : auth?.reader ? (
+                                <button
+                                    type="button"
+                                    onClick={() => router.post('/reader/logout')}
+                                    className="w-full text-left px-3 py-2 text-sm font-medium text-rose-600 rounded-md hover:bg-rose-50 cursor-pointer"
+                                >
+                                    Sign Out ({auth.reader.name})
+                                </button>
+                            ) : null}
                         </div>
                     </div>
                 </div>
@@ -375,7 +424,10 @@ export default function PublicLayout({ children, categories = [], breakingNews }
                     <Compass className="w-5 h-5" />
                     <span>Discover</span>
                 </Link>
-                <Link href="/saved" className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600">
+                <Link 
+                    href={isAuthenticated ? "/saved" : "/reader/login"} 
+                    className="flex flex-col items-center gap-0.5 text-[11px] font-medium hover:text-blue-600"
+                >
                     <Bookmark className="w-5 h-5" />
                     <span>Saved</span>
                 </Link>

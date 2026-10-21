@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\ReaderAuthController;
 use App\Http\Controllers\Cms\CmsArticleController;
 use App\Http\Controllers\Cms\CmsDashboardController;
 use App\Http\Controllers\Cms\CmsMediaController;
@@ -38,8 +39,15 @@ Route::get('/author/{slug}', [AuthorController::class, 'show'])->name('author.sh
 Route::post('/newsletter/subscribe', [ReaderActionController::class, 'subscribeNewsletter'])->name('newsletter.subscribe');
 Route::post('/articles/{article}/comments', [ReaderActionController::class, 'postComment'])->name('articles.comment');
 
-// Authenticated Reader Actions
-Route::middleware(['auth'])->group(function () {
+// Reader Authentication & Membership
+Route::get('/reader/login', [ReaderAuthController::class, 'showLogin'])->name('reader.login');
+Route::post('/reader/login', [ReaderAuthController::class, 'login'])->name('reader.login.store');
+Route::post('/reader/logout', [ReaderAuthController::class, 'logout'])->name('reader.logout');
+Route::get('/auth/google/redirect', [ReaderAuthController::class, 'googleRedirect'])->name('auth.google.redirect');
+Route::get('/auth/google/callback', [ReaderAuthController::class, 'googleCallback'])->name('auth.google.callback');
+
+// Authenticated Reader Actions (accessible by readers and staff)
+Route::middleware(['auth:reader,web'])->group(function () {
     Route::get('/saved', [ReaderActionController::class, 'savedArticles'])->name('saved.articles');
     Route::post('/articles/{article}/bookmark', [ReaderActionController::class, 'toggleBookmark'])->name('articles.bookmark');
 });

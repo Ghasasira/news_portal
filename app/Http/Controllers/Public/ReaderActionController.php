@@ -39,7 +39,7 @@ class ReaderActionController extends Controller
         $actor = $actorData['actor'];
 
         if ($type === 'guest') {
-            return redirect()->route('login');
+            return redirect()->route('reader.login');
         }
 
         if ($type === 'reader') {

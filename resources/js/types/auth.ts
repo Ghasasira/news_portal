@@ -13,8 +13,20 @@ export type User = {
     [key: string]: unknown;
 };
 
+export type Reader = {
+    id: number;
+    name: string;
+    email: string;
+    avatar_url?: string | null;
+    is_active?: boolean;
+    created_at?: string;
+    updated_at?: string;
+    [key: string]: unknown;
+};
+
 export type Auth = {
     user: User;
+    reader?: Reader | null;
 };
 
 /* @chisel-passkeys */

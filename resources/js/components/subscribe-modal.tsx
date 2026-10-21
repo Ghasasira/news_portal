@@ -108,7 +108,7 @@ export function SubscribeModal({ isOpen, onClose }: Props) {
                                 Want to bookmark stories and sync reading across devices?
                             </p>
                             <Link
-                                href="/register"
+                                href="/reader/login"
                                 onClick={onClose}
                                 className="text-xs font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1 mt-1"
                             >

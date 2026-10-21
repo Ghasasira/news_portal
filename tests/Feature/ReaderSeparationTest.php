@@ -221,4 +221,77 @@ class ReaderSeparationTest extends TestCase
         $response->assertSessionHas('success');
         $this->assertDatabaseMissing('readers', ['id' => $reader->id]);
     }
+
+    public function test_guest_is_redirected_to_reader_login_when_accessing_saved_articles_or_bookmarking(): void
+    {
+        // Visiting /saved as guest redirects to /reader/login
+        $savedResponse = $this->get(route('saved.articles'));
+        $savedResponse->assertRedirect(route('reader.login'));
+
+        // Attempting to bookmark as guest redirects to /reader/login
+        $bookmarkResponse = $this->post(route('articles.bookmark', $this->article));
+        $bookmarkResponse->assertRedirect(route('reader.login'));
+    }
+
+    public function test_guest_is_redirected_to_staff_login_when_accessing_cms(): void
+    {
+        $cmsResponse = $this->get(route('cms.dashboard'));
+        $cmsResponse->assertRedirect(route('login'));
+    }
+
+    public function test_reader_login_portal_renders_reader_auth_page(): void
+    {
+        $response = $this->get(route('reader.login'));
+        $response->assertOk();
+        $response->assertInertia(fn ($page) => $page
+            ->component('auth/reader-login')
+            ->has('hasGoogleConfigured')
+        );
+    }
+
+    public function test_reader_can_auto_onboard_and_login_via_reader_login_route(): void
+    {
+        $response = $this->post(route('reader.login.store'), [
+            'email' => 'sarah.reader@example.com',
+            'name' => 'Sarah Reader',
+        ]);
+
+        $response->assertRedirect(route('saved.articles'));
+        $this->assertDatabaseHas('readers', [
+            'email' => 'sarah.reader@example.com',
+            'name' => 'Sarah Reader',
+        ]);
+
+        $this->assertTrue(Auth::guard('reader')->check());
+        $this->assertEquals('sarah.reader@example.com', Auth::guard('reader')->user()->email);
+        $this->assertFalse(Auth::guard('web')->check());
+    }
+
+    public function test_reader_can_logout_via_reader_logout_route(): void
+    {
+        $reader = Reader::create([
+            'name' => 'Reader To Logout',
+            'email' => 'logout.reader@example.com',
+            'email_verified_at' => now(),
+        ]);
+
+        Auth::guard('reader')->login($reader);
+        $this->assertTrue(Auth::guard('reader')->check());
+
+        $response = $this->actingAs($reader, 'reader')->post(route('reader.logout'));
+        $response->assertRedirect(route('home'));
+        $this->assertFalse(Auth::guard('reader')->check());
+    }
+
+    public function test_google_redirect_in_dev_mode_authenticates_reader_demo(): void
+    {
+        // When GOOGLE_CLIENT_ID is not configured, redirects to demo reader session
+        config(['services.google.client_id' => null]);
+
+        $response = $this->get(route('auth.google.redirect'));
+        $response->assertRedirect(route('saved.articles'));
+
+        $this->assertTrue(Auth::guard('reader')->check());
+        $this->assertEquals('reader.demo@gmail.com', Auth::guard('reader')->user()->email);
+    }
 }

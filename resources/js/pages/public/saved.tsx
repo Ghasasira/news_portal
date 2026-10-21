@@ -12,8 +12,8 @@ interface Props {
 }
 
 export default function SavedArticlesPage({ articles, categories }: Props) {
-    const { auth } = usePage().props as unknown as { auth?: { user?: { name: string } } };
-    const isLoggedIn = Boolean(auth?.user);
+    const { auth } = usePage().props as unknown as { auth?: { user?: { name: string }; reader?: { name: string } } };
+    const isLoggedIn = Boolean(auth?.reader || auth?.user);
 
     const [localBookmarks, setLocalBookmarks] = useState<LocalBookmark[]>([]);
 
@@ -77,8 +77,8 @@ export default function SavedArticlesPage({ articles, categories }: Props) {
                     {!isLoggedIn && (
                         <div className="flex items-center gap-2 text-xs text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
                             <span>Saved to this device.</span>
-                            <Link href="/register" className="font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
-                                Sign up to sync <ArrowRight className="w-3 h-3" />
+                            <Link href="/reader/login" className="font-semibold text-blue-600 hover:text-blue-700 inline-flex items-center gap-1">
+                                Sign in to sync <ArrowRight className="w-3 h-3" />
                             </Link>
                         </div>
                     )}
