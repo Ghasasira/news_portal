@@ -62,10 +62,11 @@ class ArticleController extends Controller
                 '@type' => 'WebPage',
                 '@id' => url("/{$article->category->slug}/{$article->slug}"),
             ],
-            'headline' => $article->title,
-            'description' => $article->standfirst,
-            'image' => [$article->hero_image_url],
-            'datePublished' => $article->published_at?->toIso8601String(),
+            'image' => array_values(array_filter([
+                $article->hero_image_url
+                    ? (str_starts_with($article->hero_image_url, 'http') ? $article->hero_image_url : url($article->hero_image_url))
+                    : null,
+            ])),
             'dateModified' => $article->updated_at->toIso8601String(),
             'author' => [
                 '@type' => 'Person',

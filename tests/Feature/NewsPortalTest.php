@@ -143,4 +143,27 @@ class NewsPortalTest extends TestCase
             'status' => 'published',
         ]);
     }
+
+    public function test_cms_can_save_article_with_local_storage_hero_image(): void
+    {
+        $editor = User::where('role', 'chief_editor')->firstOrFail();
+        $category = Category::firstOrFail();
+
+        $response = $this->actingAs($editor)->post('/cms/articles', [
+            'title' => 'Locally Uploaded Hero Image Article',
+            'standfirst' => 'Testing storage path validation for media library uploaded hero photography.',
+            'body' => '<p>Article body content with an uploaded WebP image.</p>',
+            'primary_category_id' => $category->id,
+            'content_type' => 'news',
+            'status' => 'draft',
+            'hero_image_url' => '/storage/media/20261021_210421_qtIOcSY4.webp',
+            'hero_image_caption' => 'Photo: Newsroom Archive',
+        ]);
+
+        $response->assertRedirect('/cms/articles');
+        $this->assertDatabaseHas('articles', [
+            'title' => 'Locally Uploaded Hero Image Article',
+            'hero_image_url' => '/storage/media/20261021_210421_qtIOcSY4.webp',
+        ]);
+    }
 }

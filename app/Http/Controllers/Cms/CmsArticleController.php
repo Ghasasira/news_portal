@@ -74,7 +74,20 @@ class CmsArticleController extends Controller
             'primary_category_id' => 'required|exists:categories,id',
             'content_type' => 'required|string|in:news,opinion,analysis,explainer,liveblog,video',
             'status' => 'required|string|in:draft,in_review,approved,scheduled,published',
-            'hero_image_url' => 'nullable|url',
+            'hero_image_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        return;
+                    }
+                    if (str_starts_with($value, '/') || str_starts_with($value, 'storage/') || filter_var($value, FILTER_VALIDATE_URL)) {
+                        return;
+                    }
+                    $fail('The ' . $attribute . ' must be a valid URL or local storage path (e.g. /storage/media/...).');
+                },
+            ],
             'hero_image_caption' => 'nullable|string',
             'is_breaking' => 'boolean',
             'is_featured' => 'boolean',
@@ -100,6 +113,11 @@ class CmsArticleController extends Controller
         $wordCount = str_word_count(strip_tags($validated['body']));
         $readingTime = max(1, (int) ceil($wordCount / 200));
 
+        $heroImageUrl = $validated['hero_image_url'] ?? null;
+        if ($heroImageUrl && str_starts_with($heroImageUrl, 'storage/')) {
+            $heroImageUrl = '/' . $heroImageUrl;
+        }
+
         $article = Article::create([
             'uuid' => (string) Str::uuid(),
             'title' => $validated['title'],
@@ -110,7 +128,7 @@ class CmsArticleController extends Controller
             'user_id' => $user->id,
             'content_type' => $validated['content_type'],
             'status' => $validated['status'],
-            'hero_image_url' => $validated['hero_image_url'] ?? null,
+            'hero_image_url' => $heroImageUrl,
             'hero_image_caption' => $validated['hero_image_caption'] ?? null,
             'reading_time_minutes' => $readingTime,
             'is_breaking' => $validated['is_breaking'] ?? false,
@@ -175,7 +193,20 @@ class CmsArticleController extends Controller
             'primary_category_id' => 'required|exists:categories,id',
             'content_type' => 'required|string|in:news,opinion,analysis,explainer,liveblog,video',
             'status' => 'required|string|in:draft,in_review,approved,scheduled,published',
-            'hero_image_url' => 'nullable|url',
+            'hero_image_url' => [
+                'nullable',
+                'string',
+                'max:2048',
+                function ($attribute, $value, $fail) {
+                    if (empty($value)) {
+                        return;
+                    }
+                    if (str_starts_with($value, '/') || str_starts_with($value, 'storage/') || filter_var($value, FILTER_VALIDATE_URL)) {
+                        return;
+                    }
+                    $fail('The ' . $attribute . ' must be a valid URL or local storage path (e.g. /storage/media/...).');
+                },
+            ],
             'hero_image_caption' => 'nullable|string',
             'is_breaking' => 'boolean',
             'is_featured' => 'boolean',
@@ -214,6 +245,11 @@ class CmsArticleController extends Controller
         $wordCount = str_word_count(strip_tags($validated['body']));
         $readingTime = max(1, (int) ceil($wordCount / 200));
 
+        $heroImageUrl = $validated['hero_image_url'] ?? null;
+        if ($heroImageUrl && str_starts_with($heroImageUrl, 'storage/')) {
+            $heroImageUrl = '/' . $heroImageUrl;
+        }
+
         $article->update([
             'title' => $validated['title'],
             'slug' => !empty($validated['slug']) ? Str::slug($validated['slug']) : $article->slug,
@@ -222,7 +258,7 @@ class CmsArticleController extends Controller
             'primary_category_id' => $validated['primary_category_id'],
             'content_type' => $validated['content_type'],
             'status' => $validated['status'],
-            'hero_image_url' => $validated['hero_image_url'] ?? null,
+            'hero_image_url' => $heroImageUrl,
             'hero_image_caption' => $validated['hero_image_caption'] ?? null,
             'reading_time_minutes' => $readingTime,
             'is_breaking' => $validated['is_breaking'] ?? false,

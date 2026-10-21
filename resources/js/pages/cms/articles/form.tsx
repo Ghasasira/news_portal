@@ -520,16 +520,19 @@ export default function CmsArticleForm({ article, categories, topics, tags }: Pr
                             </div>
 
                             <div>
-                                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                                    Or paste external CDN / Unsplash URL:
+                                <label className="block text-[11px] font-semibold text-slate-500 mb-1">
+                                    Or paste external image URL / storage path:
                                 </label>
                                 <input
-                                    type="url"
+                                    type="text"
                                     value={data.hero_image_url}
                                     onChange={(e) => setData('hero_image_url', e.target.value)}
-                                    placeholder="https://images.unsplash.com/..."
-                                    className="w-full text-xs border border-slate-200 bg-slate-50 rounded-lg p-1.5 focus:bg-white focus:outline-none"
+                                    placeholder="https://... or /storage/media/..."
+                                    className="w-full text-xs font-mono border border-slate-200 bg-slate-50 rounded-lg p-1.5 focus:bg-white focus:outline-none"
                                 />
+                                {errors.hero_image_url && (
+                                    <p className="text-xs text-rose-600 mt-1">{errors.hero_image_url}</p>
+                                )}
                             </div>
                         </div>
 
