@@ -43,6 +43,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Editorial CMS Routes
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', fn () => redirect('/cms'))->name('dashboard');
+});
+
 Route::middleware(['auth', 'verified'])->prefix('cms')->name('cms.')->group(function () {
     Route::get('/', CmsDashboardController::class)->name('dashboard');
 
@@ -52,11 +56,6 @@ Route::middleware(['auth', 'verified'])->prefix('cms')->name('cms.')->group(func
     Route::get('taxonomy', [CmsTaxonomyController::class, 'index'])->name('taxonomy.index');
     Route::post('taxonomy/categories', [CmsTaxonomyController::class, 'storeCategory'])->name('taxonomy.categories.store');
     Route::post('taxonomy/topics', [CmsTaxonomyController::class, 'storeTopic'])->name('taxonomy.topics.store');
-});
-
-// Existing default settings
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

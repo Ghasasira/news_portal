@@ -12,7 +12,7 @@ class DashboardTest extends TestCase
 
     public function test_guests_are_redirected_to_the_login_page()
     {
-        $response = $this->get(route('dashboard'));
+        $response = $this->get('/cms');
         $response->assertRedirect(route('login'));
     }
 
@@ -22,6 +22,9 @@ class DashboardTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->get(route('dashboard'));
-        $response->assertOk();
+        $response->assertRedirect('/cms');
+
+        $cmsResponse = $this->get('/cms');
+        $cmsResponse->assertOk();
     }
 }
