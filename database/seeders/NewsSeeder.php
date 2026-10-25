@@ -73,11 +73,24 @@ class NewsSeeder extends Seeder
 
         // Author Profiles
         AuthorProfile::updateOrCreate(
+            ['user_id' => $admin->id],
+            [
+                'slug' => 'chief-admin',
+                'bio' => 'Chief Editorial Administrator directing multi-platform operations, technical news architecture, and investigative standards.',
+                'avatar_url' => '/storage/avatars/chief-admin.webp',
+                'credentials' => 'Chief Administrator & Managing Director',
+                'beat' => 'Editorial Systems & Media Standards',
+                'social_links' => ['twitter' => 'https://x.com/newsportal_admin', 'linkedin' => 'https://linkedin.com'],
+                'is_verified' => true,
+            ]
+        );
+
+        AuthorProfile::updateOrCreate(
             ['user_id' => $editor->id],
             [
                 'slug' => 'elena-rostova',
                 'bio' => 'Elena is the Editor-in-Chief with over 15 years investigating international climate policy, sustainable technologies, and global treaties.',
-                'avatar_url' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+                'avatar_url' => '/storage/avatars/elena-rostova.webp',
                 'credentials' => 'Editor-in-Chief · Former Foreign Correspondent',
                 'beat' => 'Global Policy & Climate',
                 'social_links' => ['twitter' => 'https://x.com/erostova', 'linkedin' => 'https://linkedin.com'],
@@ -90,7 +103,7 @@ class NewsSeeder extends Seeder
             [
                 'slug' => 'marcus-vance',
                 'bio' => 'Marcus covers frontier artificial intelligence, semiconductor geopolitics, and emerging algorithmic regulation.',
-                'avatar_url' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+                'avatar_url' => '/storage/avatars/marcus-vance.webp',
                 'credentials' => 'Senior Technology Reporter',
                 'beat' => 'Frontier Computing & AI Ethics',
                 'social_links' => ['twitter' => 'https://x.com/marcusvance', 'github' => 'https://github.com'],
@@ -103,7 +116,7 @@ class NewsSeeder extends Seeder
             [
                 'slug' => 'sarah-jenkins',
                 'bio' => 'Sarah has reported from 30+ capitals covering multilateral defense alliances, international law, and parliamentary elections.',
-                'avatar_url' => 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=400&q=80',
+                'avatar_url' => '/storage/avatars/sarah-jenkins.webp',
                 'credentials' => 'Chief Geopolitical Correspondent',
                 'beat' => 'International Security & Alliances',
                 'social_links' => ['twitter' => 'https://x.com/sjenkins_news'],
@@ -116,7 +129,7 @@ class NewsSeeder extends Seeder
             [
                 'slug' => 'david-kigozi',
                 'bio' => 'David covers capital markets, global commodity flows, sovereign wealth funds, and central bank monetary policy.',
-                'avatar_url' => 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80',
+                'avatar_url' => '/storage/avatars/david-kigozi.webp',
                 'credentials' => 'Markets & Macroeconomics Lead',
                 'beat' => 'Global Finance & Sovereign Debt',
                 'social_links' => ['linkedin' => 'https://linkedin.com'],

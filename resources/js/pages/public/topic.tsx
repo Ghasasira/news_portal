@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category, PaginatedData, Topic } from '@/types/news';
+import AuthorLink from '@/components/ui/author-link';
 import { Sparkles, Calendar, ChevronDown, ChevronUp, Clock } from 'lucide-react';
 
 interface Props {
@@ -118,7 +119,12 @@ export default function TopicPage({ topic, articles, categories }: Props) {
                                     {art.standfirst}
                                 </p>
                                 <div className="text-[11px] text-slate-400 flex items-center gap-2">
-                                    <span>{art.user?.name}</span>
+                                    <AuthorLink
+                                        user={art.user}
+                                        authorProfile={art.user?.author_profile}
+                                        showAvatar={false}
+                                        textClassName="text-slate-600 font-medium"
+                                    />
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> {art.reading_time_minutes}m

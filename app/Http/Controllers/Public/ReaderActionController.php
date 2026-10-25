@@ -107,4 +107,23 @@ class ReaderActionController extends Controller
 
         return back()->with('success', 'Your comment has been posted.');
     }
+
+    public function deleteComment(Article $article, Comment $comment, Request $request): RedirectResponse
+    {
+        $actorData = $this->resolveActor($request);
+        $type = $actorData['type'];
+        $actor = $actorData['actor'];
+
+        $isStaff = $type === 'user' && in_array($actor->role, ['super_admin', 'chief_editor', 'section_editor']);
+        $isOwnerReader = $type === 'reader' && $actor && $comment->reader_id === $actor->id;
+        $isOwnerStaff = $type === 'user' && $actor && $comment->user_id === $actor->id;
+
+        if (! $isStaff && ! $isOwnerReader && ! $isOwnerStaff) {
+            abort(403, 'Unauthorized to delete this comment.');
+        }
+
+        $comment->delete();
+
+        return back()->with('success', 'Comment removed successfully.');
+    }
 }

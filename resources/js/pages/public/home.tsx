@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category, Topic } from '@/types/news';
+import AuthorLink from '@/components/ui/author-link';
 import { Clock, Play, ArrowRight, TrendingUp, Sparkles, Flame, ChevronRight } from 'lucide-react';
 
 interface Props {
@@ -87,14 +88,13 @@ export default function Home({
 
                             <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
                                 <div className="flex items-center gap-2">
-                                    {leadStory.user?.author_profile?.avatar_url && (
-                                        <img 
-                                            src={leadStory.user.author_profile.avatar_url} 
-                                            alt={leadStory.user.name} 
-                                            className="w-6 h-6 rounded-full object-cover"
-                                        />
-                                    )}
-                                    <span className="font-semibold text-slate-800">{leadStory.user?.name}</span>
+                                    <AuthorLink
+                                        user={leadStory.user}
+                                        authorProfile={leadStory.user?.author_profile}
+                                        showAvatar={true}
+                                        avatarSize="sm"
+                                        textClassName="text-slate-800"
+                                    />
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> {leadStory.reading_time_minutes} min read
@@ -193,7 +193,13 @@ export default function Home({
                                 </div>
 
                                 <div className="flex items-center justify-between text-[11px] text-slate-400 pt-3 mt-3 border-t border-slate-100">
-                                    <span>{article.user?.name}</span>
+                                    <AuthorLink
+                                        user={article.user}
+                                        authorProfile={article.user?.author_profile}
+                                        showAvatar={true}
+                                        avatarSize="xs"
+                                        textClassName="text-slate-600 font-medium"
+                                    />
                                     <span>{article.reading_time_minutes}m</span>
                                 </div>
                             </Link>
@@ -305,8 +311,15 @@ export default function Home({
                                         <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
                                             {art.standfirst}
                                         </p>
-                                        <div className="text-[11px] text-slate-400">
-                                            {art.user?.name} • {art.reading_time_minutes} min read
+                                        <div className="text-[11px] text-slate-400 flex items-center gap-1.5 flex-wrap">
+                                            <AuthorLink
+                                                user={art.user}
+                                                authorProfile={art.user?.author_profile}
+                                                showAvatar={false}
+                                                textClassName="text-slate-600 font-medium"
+                                            />
+                                            <span>•</span>
+                                            <span>{art.reading_time_minutes} min read</span>
                                         </div>
                                     </Link>
                                 ))}

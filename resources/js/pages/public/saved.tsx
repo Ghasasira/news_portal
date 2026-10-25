@@ -3,6 +3,7 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category, PaginatedData } from '@/types/news';
+import AuthorLink from '@/components/ui/author-link';
 import { Bookmark, Clock, Trash2, ArrowRight } from 'lucide-react';
 import { LocalBookmark } from '@/hooks/use-bookmarks';
 
@@ -113,14 +114,24 @@ export default function SavedArticlesPage({ articles, categories }: Props) {
                                     </p>
                                 </Link>
 
-                                <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100">
-                                    <span className="flex items-center gap-1">
-                                        <Clock className="w-3 h-3" /> {art.reading_time_minutes} min read
-                                    </span>
+                                <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100 flex-wrap gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <AuthorLink
+                                            user={art.user}
+                                            authorProfile={art.user?.author_profile}
+                                            showAvatar={true}
+                                            avatarSize="xs"
+                                            textClassName="text-slate-600 font-medium"
+                                        />
+                                        <span>•</span>
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" /> {art.reading_time_minutes}m
+                                        </span>
+                                    </div>
                                     <button
                                         type="button"
                                         onClick={() => removeServerBookmark(art.id)}
-                                        className="text-slate-400 hover:text-rose-600 transition flex items-center gap-1 text-[11px]"
+                                        className="text-slate-400 hover:text-rose-600 transition flex items-center gap-1 text-[11px] cursor-pointer"
                                         title="Remove bookmark"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" /> Remove

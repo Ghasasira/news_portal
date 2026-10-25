@@ -29,7 +29,8 @@ class ArticleController extends Controller
                 'tags',
                 'seo',
                 'aiMeta',
-                'comments.user',
+                'comments.user.authorProfile',
+                'comments.reader',
             ])
             ->firstOrFail();
 

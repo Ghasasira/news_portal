@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category, PaginatedData } from '@/types/news';
+import AuthorLink from '@/components/ui/author-link';
 import { Search, Filter, Clock } from 'lucide-react';
 
 interface Props {
@@ -124,7 +125,13 @@ export default function SearchPage({
                                     {article.standfirst}
                                 </p>
                                 <div className="text-[11px] text-slate-400 flex items-center gap-2 pt-1">
-                                    <span>{article.user?.name}</span>
+                                    <AuthorLink
+                                        user={article.user}
+                                        authorProfile={article.user?.author_profile}
+                                        showAvatar={true}
+                                        avatarSize="xs"
+                                        textClassName="text-slate-600 font-medium"
+                                    />
                                     <span>•</span>
                                     <span className="flex items-center gap-1">
                                         <Clock className="w-3 h-3" /> {article.reading_time_minutes} min read

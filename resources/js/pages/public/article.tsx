@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { toast } from 'sonner';
 import PublicLayout from '@/layouts/public-layout';
+import AuthorAvatar from '@/components/ui/author-avatar';
 import { Article, Category } from '@/types/news';
+import { Auth } from '@/types/auth';
 import { useBookmarks } from '@/hooks/use-bookmarks';
 import { 
     Clock, 
@@ -17,7 +19,9 @@ import {
     ChevronUp, 
     Sparkles, 
     MessageSquare,
-    Send
+    Send,
+    Trash2,
+    LogIn
 } from 'lucide-react';
 import { SocialShareBar } from '@/components/social-share-bar';
 
@@ -40,11 +44,16 @@ export default function ArticlePage({
     faqLd,
     categories,
 }: Props) {
+    const { auth } = usePage<{ auth?: Auth }>().props;
     const { isSaved: localIsSaved, toggle: toggleBookmark } = useBookmarks(article);
     const [saved, setSaved] = useState(initialSaved || localIsSaved);
     const [openFaq, setOpenFaq] = useState<number | null>(null);
     const [commentContent, setCommentContent] = useState('');
     const [commentAuthor, setCommentAuthor] = useState('');
+    const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+    const currentActor = auth?.reader || auth?.user;
+    const isStaff = Boolean(auth?.user && ['super_admin', 'chief_editor', 'section_editor'].includes(auth.user.role || ''));
 
     useEffect(() => {
         setSaved(initialSaved || localIsSaved);
@@ -57,13 +66,22 @@ export default function ArticlePage({
 
     const handleCommentSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!commentContent.trim()) return;
+        const trimmed = commentContent.trim();
+        if (!trimmed) {
+            toast.error('Please enter a comment.');
+            return;
+        }
+        if (trimmed.length < 3) {
+            toast.error('Comment must be at least 3 characters.');
+            return;
+        }
 
+        setIsSubmittingComment(true);
         router.post(
             `/articles/${article.id}/comments`,
             {
-                content: commentContent,
-                author_name: commentAuthor || 'Reader',
+                content: trimmed,
+                author_name: currentActor ? currentActor.name : (commentAuthor.trim() || 'Reader'),
             },
             {
                 preserveScroll: true,
@@ -71,9 +89,23 @@ export default function ArticlePage({
                     toast.success('Your comment has been posted!');
                     setCommentContent('');
                     setCommentAuthor('');
+                    setIsSubmittingComment(false);
+                },
+                onError: (errors) => {
+                    toast.error((Object.values(errors)[0] as string) || 'Could not post comment.');
+                    setIsSubmittingComment(false);
                 },
             }
         );
+    };
+
+    const handleDeleteComment = (commentId: number) => {
+        if (!confirm('Are you sure you want to remove this comment?')) return;
+        router.delete(`/articles/${article.id}/comments/${commentId}`, {
+            preserveScroll: true,
+            onSuccess: () => toast.success('Comment removed.'),
+            onError: () => toast.error('Failed to remove comment.'),
+        });
     };
 
     const formattedDate = article.published_at 
@@ -132,17 +164,22 @@ export default function ArticlePage({
                     {/* BYLINE & ACTIONS BAR */}
                     <div className="flex flex-wrap items-center justify-between gap-4 py-4 border-y border-slate-200 text-sm">
                         <div className="flex items-center gap-3">
-                            {article.user?.author_profile?.avatar_url && (
-                                <img
-                                    src={article.user.author_profile.avatar_url}
-                                    alt={article.user.name}
-                                    className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                            <Link 
+                                href={`/author/${article.user?.author_profile?.slug || (article.user?.name ? article.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'staff')}`}
+                                className="group shrink-0" 
+                                title={`View all stories by ${article.user?.name || 'Author'}`}
+                            >
+                                <AuthorAvatar
+                                    name={article.user?.name}
+                                    avatarUrl={article.user?.author_profile?.avatar_url}
+                                    size="lg"
+                                    className="group-hover:ring-2 group-hover:ring-blue-600 transition"
                                 />
-                            )}
+                            </Link>
                             <div>
                                 <div className="font-bold text-slate-900 flex items-center gap-1.5">
                                     <Link 
-                                        href={`/author/${article.user?.author_profile?.slug}`}
+                                        href={`/author/${article.user?.author_profile?.slug || (article.user?.name ? article.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'staff')}`}
                                         className="hover:text-blue-600 transition"
                                     >
                                         {article.user?.name}
@@ -288,38 +325,58 @@ export default function ArticlePage({
                 </div>
 
                 {/* 7. AUTHOR E-E-A-T CARD */}
-                {article.user?.author_profile && (
-                    <div className="mt-10 p-6 rounded-2xl bg-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-start gap-4">
-                        {article.user.author_profile.avatar_url && (
-                            <img
-                                src={article.user.author_profile.avatar_url}
-                                alt={article.user.name}
-                                className="w-16 h-16 rounded-full object-cover shrink-0 border-2 border-white shadow-xs"
-                            />
-                        )}
-                        <div className="space-y-1.5 flex-1">
-                            <div className="flex items-center justify-between">
+                <div className="mt-10 p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-slate-50 via-white to-slate-50 border border-slate-200/80 flex flex-col sm:flex-row items-start gap-5 shadow-2xs">
+                    <Link
+                        href={`/author/${article.user?.author_profile?.slug || (article.user?.name ? article.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'staff')}`}
+                        className="group shrink-0"
+                        title={`View all stories by ${article.user?.name || 'Author'}`}
+                    >
+                        <AuthorAvatar
+                            name={article.user?.name}
+                            avatarUrl={article.user?.author_profile?.avatar_url}
+                            size="xl"
+                            className="group-hover:ring-2 group-hover:ring-blue-600 transition shadow-sm"
+                        />
+                    </Link>
+                    <div className="space-y-2 flex-1">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
                                 <Link
-                                    href={`/author/${article.user.author_profile.slug}`}
-                                    className="font-bold text-base text-slate-900 hover:text-blue-600 transition"
+                                    href={`/author/${article.user?.author_profile?.slug || (article.user?.name ? article.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'staff')}`}
+                                    className="font-bold text-lg text-slate-900 hover:text-blue-600 transition font-serif"
                                 >
-                                    {article.user.name}
+                                    {article.user?.name}
                                 </Link>
+                                {article.user?.author_profile?.is_verified && (
+                                    <span className="text-blue-700 bg-blue-50 border border-blue-200/60 text-xs font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                        ✓ Verified Staff
+                                    </span>
+                                )}
+                            </div>
+                            {article.user?.author_profile?.credentials && (
                                 <span className="text-xs font-semibold text-slate-500">
                                     {article.user.author_profile.credentials}
                                 </span>
-                            </div>
-                            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                                {article.user.author_profile.bio}
-                            </p>
-                            {article.user.author_profile.beat && (
-                                <span className="text-xs text-blue-600 font-medium block">
-                                    Beat: {article.user.author_profile.beat}
-                                </span>
                             )}
                         </div>
+                        <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                            {article.user?.author_profile?.bio || 'Journalist and contributing writer for NewsPortal covering developing news, policy, and critical analysis.'}
+                        </p>
+                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                            {article.user?.author_profile?.beat && (
+                                <span className="text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded-md font-medium border border-blue-100">
+                                    Beat: <strong>{article.user.author_profile.beat}</strong>
+                                </span>
+                            )}
+                            <Link
+                                href={`/author/${article.user?.author_profile?.slug || (article.user?.name ? article.user.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') : 'staff')}`}
+                                className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition ml-auto"
+                            >
+                                View all stories by {article.user?.name} &rarr;
+                            </Link>
+                        </div>
                     </div>
-                )}
+                </div>
 
                 {/* 8. SOCIAL ENGAGEMENT & SHARING */}
                 <SocialShareBar 
@@ -338,50 +395,143 @@ export default function ArticlePage({
                     </div>
 
                     {/* Submission Form */}
-                    <form onSubmit={handleCommentSubmit} className="bg-slate-50 p-4 rounded-xl border border-slate-200 mb-8 space-y-3">
+                    <form onSubmit={handleCommentSubmit} className="bg-slate-50 p-4 sm:p-5 rounded-2xl border border-slate-200 mb-8 space-y-4">
+                        {/* Logged in actor indicator or Guest notice */}
+                        <div className="flex items-center justify-between text-xs pb-3 border-b border-slate-200/60">
+                            {currentActor ? (
+                                <div className="flex items-center gap-2">
+                                    <AuthorAvatar
+                                        name={currentActor.name}
+                                        avatarUrl={auth?.reader?.avatar_url || (auth?.user as any)?.author_profile?.avatar_url}
+                                        size="xs"
+                                    />
+                                    <span className="text-slate-600">
+                                        Commenting as <strong className="text-slate-900">{currentActor.name}</strong>
+                                    </span>
+                                    {auth?.user && (
+                                        <span className="bg-purple-100 text-purple-700 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                            Editorial Staff
+                                        </span>
+                                    )}
+                                    {auth?.reader && (
+                                        <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                            Verified Reader
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-between w-full">
+                                    <span className="text-slate-500">
+                                        Join the conversation as a guest, or{' '}
+                                        <Link href="/reader/login" className="text-blue-600 font-semibold hover:underline inline-flex items-center gap-1">
+                                            <LogIn className="w-3 h-3" /> sign in with your Reader account
+                                        </Link>
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+
                         <textarea
                             value={commentContent}
                             onChange={(e) => setCommentContent(e.target.value)}
                             rows={3}
-                            placeholder="Share your analytical perspective or question..."
-                            className="w-full bg-white border border-slate-200 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                            placeholder="Share your analytical perspective, question, or context..."
+                            className="w-full bg-white border border-slate-200 rounded-xl p-3 text-sm text-slate-800 placeholder-slate-400 focus:ring-2 focus:ring-blue-600 focus:outline-none transition leading-relaxed"
                             required
                         />
-                        <div className="flex items-center justify-between gap-3">
-                            <input
-                                type="text"
-                                value={commentAuthor}
-                                onChange={(e) => setCommentAuthor(e.target.value)}
-                                placeholder="Your Name"
-                                className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 w-48 focus:outline-none"
-                            />
-                            <button
-                                type="submit"
-                                className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition"
-                            >
-                                <Send className="w-3.5 h-3.5" /> Post Comment
-                            </button>
+
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            {!currentActor && (
+                                <input
+                                    type="text"
+                                    value={commentAuthor}
+                                    onChange={(e) => setCommentAuthor(e.target.value)}
+                                    placeholder="Your Name (Optional)"
+                                    className="bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 w-52 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                />
+                            )}
+                            <div className="ml-auto">
+                                <button
+                                    type="submit"
+                                    disabled={isSubmittingComment}
+                                    className="bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-4 py-2 rounded-lg flex items-center gap-1.5 transition shadow-xs cursor-pointer disabled:opacity-50"
+                                >
+                                    <Send className="w-3.5 h-3.5" />
+                                    {isSubmittingComment ? 'Posting...' : 'Post Comment'}
+                                </button>
+                            </div>
                         </div>
                     </form>
 
                     {/* Comments List */}
                     <div className="space-y-4">
                         {article.comments && article.comments.length > 0 ? (
-                            article.comments.map((comment) => (
-                                <div key={comment.id} className="p-4 rounded-lg bg-white border border-slate-100 shadow-xs space-y-1">
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="font-bold text-slate-800">{comment.author_name}</span>
-                                        <span className="text-slate-400">
-                                            {new Date(comment.created_at).toLocaleDateString()}
-                                        </span>
+                            article.comments.map((comment) => {
+                                const canDelete = isStaff || (auth?.reader && comment.reader_id === auth.reader.id) || (auth?.user && comment.user_id === auth.user.id);
+                                const commentAvatarUrl = comment.reader?.avatar_url || (comment.user as any)?.author_profile?.avatar_url;
+                                const isStaffComment = Boolean(comment.user_id || comment.user);
+                                const isVerifiedReaderComment = Boolean(comment.reader_id || comment.reader);
+
+                                return (
+                                    <div 
+                                        key={comment.id} 
+                                        className="p-4 sm:p-5 rounded-xl bg-white border border-slate-200/80 shadow-2xs space-y-2 hover:border-slate-300 transition"
+                                    >
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center gap-3">
+                                                <AuthorAvatar
+                                                    name={comment.author_name}
+                                                    avatarUrl={commentAvatarUrl}
+                                                    size="sm"
+                                                />
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <span className="font-bold text-xs sm:text-sm text-slate-900">
+                                                        {comment.author_name}
+                                                    </span>
+                                                    {isStaffComment && (
+                                                        <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-purple-200/60">
+                                                            Staff
+                                                        </span>
+                                                    )}
+                                                    {isVerifiedReaderComment && !isStaffComment && (
+                                                        <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md border border-blue-200/60">
+                                                            Verified Reader
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-[11px] text-slate-400">
+                                                    {new Date(comment.created_at).toLocaleDateString(undefined, {
+                                                        month: 'short',
+                                                        day: 'numeric',
+                                                        year: 'numeric',
+                                                    })}
+                                                </span>
+                                                {canDelete && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteComment(comment.id)}
+                                                        title="Delete comment"
+                                                        className="text-slate-300 hover:text-rose-600 transition p-1 rounded-md cursor-pointer"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <p className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line pl-9">
+                                            {comment.content}
+                                        </p>
                                     </div>
-                                    <p className="text-sm text-slate-600 leading-relaxed">
-                                        {comment.content}
-                                    </p>
-                                </div>
-                            ))
+                                );
+                            })
                         ) : (
-                            <p className="text-xs text-slate-400 italic">No comments yet. Be the first to join the dialogue.</p>
+                            <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-8 text-center space-y-2">
+                                <MessageSquare className="w-6 h-6 text-slate-400 mx-auto" />
+                                <p className="text-xs font-semibold text-slate-700">No comments yet</p>
+                                <p className="text-xs text-slate-400">Be the first to join the dialogue and share your perspective.</p>
+                            </div>
                         )}
                     </div>
                 </section>

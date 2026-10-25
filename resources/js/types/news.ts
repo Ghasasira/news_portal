@@ -82,11 +82,17 @@ export interface Comment {
     id: number;
     article_id: number;
     user_id: number | null;
+    reader_id: number | null;
     author_name: string;
     content: string;
     status: string;
     created_at: string;
     user?: User;
+    reader?: {
+        id: number;
+        name: string;
+        avatar_url: string | null;
+    };
 }
 
 export interface Article {

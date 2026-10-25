@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Head, useForm, router, usePage } from '@inertiajs/react';
 import CmsLayout from '@/layouts/cms-layout';
+import AuthorAvatar from '@/components/ui/author-avatar';
 import { 
     Users, 
     UserPlus, 
@@ -18,12 +19,14 @@ import {
     MessageSquare, 
     Globe, 
     ShieldCheck,
-    Radio
+    Radio,
+    Upload
 } from 'lucide-react';
 
 interface AuthorProfile {
     id: number;
     slug: string;
+    avatar_url?: string;
     bio?: string;
     beat?: string;
     credentials?: string;
@@ -107,8 +110,22 @@ export default function CmsUsersIndex({
     const [editingUser, setEditingUser] = useState<UserItem | null>(null);
     const [copiedPassword, setCopiedPassword] = useState(false);
 
+    const [onboardAvatarPreview, setOnboardAvatarPreview] = useState<string | null>(null);
+    const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null);
+
     // Onboarding Form
-    const onboardForm = useForm({
+    const onboardForm = useForm<{
+        name: string;
+        email: string;
+        role: string;
+        password: string;
+        password_confirmation: string;
+        beat: string;
+        bio: string;
+        credentials: string;
+        avatar: File | null;
+        avatar_url: string;
+    }>({
         name: '',
         email: '',
         role: 'author',
@@ -117,10 +134,24 @@ export default function CmsUsersIndex({
         beat: '',
         bio: '',
         credentials: '',
+        avatar: null,
+        avatar_url: '',
     });
 
     // Edit Form
-    const editForm = useForm({
+    const editForm = useForm<{
+        name: string;
+        email: string;
+        role: string;
+        password: string;
+        password_confirmation: string;
+        beat: string;
+        bio: string;
+        credentials: string;
+        avatar: File | null;
+        avatar_url: string;
+        _method?: string;
+    }>({
         name: '',
         email: '',
         role: 'author',
@@ -129,7 +160,25 @@ export default function CmsUsersIndex({
         beat: '',
         bio: '',
         credentials: '',
+        avatar: null,
+        avatar_url: '',
     });
+
+    const handleOnboardAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            onboardForm.setData('avatar', file);
+            setOnboardAvatarPreview(URL.createObjectURL(file));
+        }
+    };
+
+    const handleEditAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            editForm.setData('avatar', file);
+            setEditAvatarPreview(URL.createObjectURL(file));
+        }
+    };
 
     const generateRandomPassword = (targetForm: 'onboard' | 'edit') => {
         const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+';
@@ -176,15 +225,18 @@ export default function CmsUsersIndex({
     const handleOnboardSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         onboardForm.post('/cms/users', {
+            forceFormData: true,
             onSuccess: () => {
                 setIsOnboardOpen(false);
                 onboardForm.reset();
+                setOnboardAvatarPreview(null);
             },
         });
     };
 
     const handleStartEdit = (user: UserItem) => {
         setEditingUser(user);
+        setEditAvatarPreview(null);
         editForm.setData({
             name: user.name,
             email: user.email,
@@ -194,6 +246,8 @@ export default function CmsUsersIndex({
             beat: user.author_profile?.beat || '',
             bio: user.author_profile?.bio || '',
             credentials: user.author_profile?.credentials || '',
+            avatar: null,
+            avatar_url: user.author_profile?.avatar_url || '',
         });
     };
 
@@ -201,10 +255,16 @@ export default function CmsUsersIndex({
         e.preventDefault();
         if (!editingUser) return;
 
-        editForm.put(`/cms/users/${editingUser.id}`, {
+        editForm.transform((data) => ({
+            ...data,
+            _method: 'PUT',
+        }));
+        editForm.post(`/cms/users/${editingUser.id}`, {
+            forceFormData: true,
             onSuccess: () => {
                 setEditingUser(null);
                 editForm.reset();
+                setEditAvatarPreview(null);
             },
         });
     };
@@ -403,9 +463,11 @@ export default function CmsUsersIndex({
                                         <tr key={user.id} className="hover:bg-slate-50/80 transition">
                                             <td className="py-3 px-4">
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs uppercase shrink-0">
-                                                        {user.name.slice(0, 2)}
-                                                    </div>
+                                                    <AuthorAvatar
+                                                        name={user.name}
+                                                        avatarUrl={user.author_profile?.avatar_url}
+                                                        size="md"
+                                                    />
                                                     <div>
                                                         <div className="flex items-center gap-1.5 font-bold text-slate-900">
                                                             <span>{user.name}</span>
@@ -816,6 +878,52 @@ export default function CmsUsersIndex({
 
                                     <div>
                                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                            Staff Avatar Image (Stored on System)
+                                        </label>
+                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3.5">
+                                            <AuthorAvatar
+                                                name={onboardForm.data.name || 'Preview'}
+                                                avatarUrl={onboardAvatarPreview || onboardForm.data.avatar_url}
+                                                size="lg"
+                                                className="ring-2 ring-white shadow-sm shrink-0"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 cursor-pointer shadow-xs">
+                                                        <Upload className="w-3.5 h-3.5 text-slate-500" />
+                                                        <span>{onboardForm.data.avatar ? 'Change Image' : 'Upload Staff Photo'}</span>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                                                            onChange={handleOnboardAvatarChange}
+                                                            className="sr-only"
+                                                        />
+                                                    </label>
+                                                    {onboardAvatarPreview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                onboardForm.setData('avatar', null);
+                                                                setOnboardAvatarPreview(null);
+                                                            }}
+                                                            className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
+                                                        >
+                                                            Remove
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 mt-1">
+                                                    Stored locally in system storage and optimized to WebP.
+                                                </p>
+                                                {onboardForm.errors.avatar && (
+                                                    <p className="text-red-600 text-[11px] mt-1">{onboardForm.errors.avatar}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                                             Short Bio
                                         </label>
                                         <textarea
@@ -982,6 +1090,52 @@ export default function CmsUsersIndex({
                                             className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-lg"
                                         />
                                     </div>
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                                            Staff Avatar Image (Stored on System)
+                                        </label>
+                                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-3.5">
+                                            <AuthorAvatar
+                                                name={editForm.data.name || 'Preview'}
+                                                avatarUrl={editAvatarPreview || editForm.data.avatar_url}
+                                                size="lg"
+                                                className="ring-2 ring-white shadow-sm shrink-0"
+                                            />
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2">
+                                                    <label className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded hover:bg-slate-50 cursor-pointer shadow-xs">
+                                                        <Upload className="w-3.5 h-3.5 text-slate-500" />
+                                                        <span>{editForm.data.avatar ? 'Change Image' : 'Upload New Photo'}</span>
+                                                        <input
+                                                            type="file"
+                                                            accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
+                                                            onChange={handleEditAvatarChange}
+                                                            className="sr-only"
+                                                        />
+                                                    </label>
+                                                    {editAvatarPreview && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                editForm.setData('avatar', null);
+                                                                setEditAvatarPreview(null);
+                                                            }}
+                                                            className="text-xs text-red-600 hover:text-red-700 px-2 py-1"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <p className="text-[10px] text-slate-500 mt-1">
+                                                    Saved to local filesystem and converted to WebP.
+                                                </p>
+                                                {editForm.errors.avatar && (
+                                                    <p className="text-red-600 text-[11px] mt-1">{editForm.errors.avatar}</p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div>
                                         <label className="block text-[11px] font-semibold text-slate-700 mb-1">
                                             Biography

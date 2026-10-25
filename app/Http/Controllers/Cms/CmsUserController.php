@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AuthorProfile;
 use App\Models\Reader;
 use App\Models\User;
+use App\Services\AvatarStorageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -145,7 +146,14 @@ class CmsUserController extends Controller
             'beat' => ['nullable', 'string', 'max:150'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'credentials' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,gif,avif', 'max:10240'],
+            'avatar_url' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $avatarUrl = $validated['avatar_url'] ?? null;
+        if ($request->hasFile('avatar')) {
+            $avatarUrl = app(AvatarStorageService::class)->store($request->file('avatar'));
+        }
 
         $user = User::create([
             'name' => $validated['name'],
@@ -155,9 +163,9 @@ class CmsUserController extends Controller
             'email_verified_at' => now(),
         ]);
 
-        // Auto-provision author profile for editorial roles or if beat/bio provided
+        // Auto-provision author profile for editorial roles or if beat/bio/avatar provided
         $isEditorial = in_array($validated['role'], ['super_admin', 'chief_editor', 'section_editor', 'author', 'contributor']);
-        if ($isEditorial || ! empty($validated['beat']) || ! empty($validated['bio'])) {
+        if ($isEditorial || ! empty($validated['beat']) || ! empty($validated['bio']) || ! empty($avatarUrl)) {
             $baseSlug = Str::slug($validated['name']);
             $slug = $baseSlug ?: 'author-'.Str::random(6);
             $counter = 1;
@@ -172,6 +180,7 @@ class CmsUserController extends Controller
                 'beat' => $validated['beat'] ?? ($isEditorial ? 'News Desk' : null),
                 'bio' => $validated['bio'] ?? null,
                 'credentials' => $validated['credentials'] ?? null,
+                'avatar_url' => $avatarUrl,
                 'is_verified' => true,
             ]);
         }
@@ -198,6 +207,8 @@ class CmsUserController extends Controller
             'beat' => ['nullable', 'string', 'max:150'],
             'bio' => ['nullable', 'string', 'max:1000'],
             'credentials' => ['nullable', 'string', 'max:255'],
+            'avatar' => ['nullable', 'file', 'image', 'mimes:jpeg,png,jpg,webp,gif,avif', 'max:10240'],
+            'avatar_url' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Prevent admin demoting themselves if they are the last super admin
@@ -217,15 +228,21 @@ class CmsUserController extends Controller
 
         $user->save();
 
+        $avatarUrl = array_key_exists('avatar_url', $validated) ? $validated['avatar_url'] : ($user->authorProfile?->avatar_url);
+        if ($request->hasFile('avatar')) {
+            $avatarUrl = app(AvatarStorageService::class)->store($request->file('avatar'), $user->authorProfile?->avatar_url);
+        }
+
         // Update or create author profile
         $isEditorial = in_array($validated['role'], ['super_admin', 'chief_editor', 'section_editor', 'author', 'contributor']);
-        if ($isEditorial || ! empty($validated['beat']) || ! empty($validated['bio'])) {
+        if ($isEditorial || ! empty($validated['beat']) || ! empty($validated['bio']) || ! empty($avatarUrl)) {
             $authorProfile = $user->authorProfile;
             if ($authorProfile) {
                 $authorProfile->update([
                     'beat' => $validated['beat'] ?? $authorProfile->beat,
                     'bio' => $validated['bio'] ?? $authorProfile->bio,
                     'credentials' => $validated['credentials'] ?? $authorProfile->credentials,
+                    'avatar_url' => $avatarUrl ?? $authorProfile->avatar_url,
                 ]);
             } else {
                 $baseSlug = Str::slug($validated['name']);
@@ -242,6 +259,7 @@ class CmsUserController extends Controller
                     'beat' => $validated['beat'] ?? 'News Desk',
                     'bio' => $validated['bio'] ?? null,
                     'credentials' => $validated['credentials'] ?? null,
+                    'avatar_url' => $avatarUrl,
                     'is_verified' => true,
                 ]);
             }
@@ -279,6 +297,9 @@ class CmsUserController extends Controller
         }
 
         $userName = $user->name;
+        if ($user->authorProfile?->avatar_url) {
+            app(AvatarStorageService::class)->deleteOldAvatar($user->authorProfile->avatar_url);
+        }
         $user->authorProfile()?->delete();
         $user->delete();
 

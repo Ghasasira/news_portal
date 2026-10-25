@@ -38,6 +38,7 @@ Route::get('/author/{slug}', [AuthorController::class, 'show'])->name('author.sh
 // Reader Actions
 Route::post('/newsletter/subscribe', [ReaderActionController::class, 'subscribeNewsletter'])->name('newsletter.subscribe');
 Route::post('/articles/{article}/comments', [ReaderActionController::class, 'postComment'])->name('articles.comment');
+Route::delete('/articles/{article}/comments/{comment}', [ReaderActionController::class, 'deleteComment'])->name('articles.comment.delete');
 
 // Reader Authentication & Membership
 Route::get('/reader/login', [ReaderAuthController::class, 'showLogin'])->name('reader.login');

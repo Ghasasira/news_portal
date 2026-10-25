@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import PublicLayout from '@/layouts/public-layout';
 import { Article, Category, PaginatedData } from '@/types/news';
+import AuthorLink from '@/components/ui/author-link';
 import { Clock } from 'lucide-react';
 
 interface Props {
@@ -95,7 +96,13 @@ export default function CategoryPage({ category, activeSubcategory, articles, ca
                                 </p>
                             </div>
                             <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-slate-100">
-                                <span>{article.user?.name}</span>
+                                <AuthorLink
+                                    user={article.user}
+                                    authorProfile={article.user?.author_profile}
+                                    showAvatar={true}
+                                    avatarSize="xs"
+                                    textClassName="text-slate-600 font-medium"
+                                />
                                 <span className="flex items-center gap-1">
                                     <Clock className="w-3 h-3" /> {article.reading_time_minutes} min
                                 </span>
